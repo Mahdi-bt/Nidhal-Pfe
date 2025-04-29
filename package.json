@@ -1,0 +1,28 @@
+{
+  "name": "training-center",
+  "version": "1.0.0",
+  "description": "Training Center Management System",
+  "scripts": {
+    "start:backend": "docker-compose up",
+    "start:backend:detached": "docker-compose up -d",
+    "start:frontend": "cd frontend && pnpm dev",
+    "start:prod": "docker-compose -f docker-compose.prod.yml up -d",
+    "stop:backend": "docker-compose down",
+    "stop:prod": "docker-compose -f docker-compose.prod.yml down",
+    "install:frontend": "cd frontend && pnpm install",
+    "install:backend": "cd backend && pnpm install",
+    "install:all": "pnpm run install:frontend && pnpm run install:backend",
+    "build:frontend": "cd frontend && pnpm run build"
+  },
+  "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.7",
+    "@radix-ui/react-progress": "^1.1.4",
+    "@radix-ui/react-slot": "^1.2.0",
+    "@radix-ui/react-tabs": "^1.1.9",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.503.0",
+    "next-themes": "^0.4.6",
+    "tailwind-merge": "^3.2.0"
+  }
+}

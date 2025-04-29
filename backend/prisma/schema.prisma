@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(USER)
+  status    UserStatus @default(ACTIVE)
+  enrollments Enrollment[]
+  courseProgress CourseProgress[]
+  videoProgress VideoProgress[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  paymentIntents PaymentIntent[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+model Course {
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  sections    Section[]
+  enrollments Enrollment[]
+  progress    CourseProgress[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  paymentIntents PaymentIntent[]
+}
+
+model Section {
+  id        String   @id @default(uuid())
+  name      String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String
+  videos    Video[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Video {
+  id        String    @id @default(uuid())
+  name      String
+  filePath  String?
+  section   Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  sectionId String
+  progress  VideoProgress[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model CourseProgress {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String
+  completed Boolean  @default(false)
+  progress  Float    @default(0)
+  videoProgress VideoProgress[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+model VideoProgress {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  videoId   String
+  courseProgress CourseProgress @relation(fields: [courseProgressId], references: [id], onDelete: Cascade)
+  courseProgressId String
+  watched   Boolean  @default(false)
+  progress  Float    @default(0)
+  lastPosition Float @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, videoId])
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String
+  enrolledAt DateTime @default(now())
+  status    EnrollmentStatus @default(ACTIVE)
+  paymentIntent PaymentIntent?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+model PaymentIntent {
+  id        String   @id
+  amount    Float
+  status    PaymentStatus @default(PENDING)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String
+  enrollment Enrollment? @relation(fields: [enrollmentId], references: [id])
+  enrollmentId String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+} 

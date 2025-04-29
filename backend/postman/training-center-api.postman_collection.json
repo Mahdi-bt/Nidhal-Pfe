@@ -1,0 +1,772 @@
+{
+	"info": {
+		"_postman_id": "your-collection-id",
+		"name": "Training Center API",
+		"description": "API collection for the Training Center Management System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\",\n    \"name\": \"John Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "register"]
+						},
+						"description": "Register a new user"
+					}
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login to get authentication token"
+					}
+				}
+			]
+		},
+		{
+			"name": "User Profile",
+			"item": [
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "profile"]
+						},
+						"description": "Get current user's profile"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Name\",\n    \"email\": \"updated@example.com\",\n    \"currentPassword\": \"current-password\",\n    \"newPassword\": \"new-password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "profile"]
+						},
+						"description": "Update user profile (name, email, password)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Get All Payments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments"]
+						},
+						"description": "Get all payment transactions in the system (Admin only)"
+					}
+				},
+				{
+					"name": "Get My Transactions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/my-transactions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "my-transactions"]
+						},
+						"description": "Get all payment transactions for the current user"
+					}
+				},
+				{
+					"name": "Create Payment Intent",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/create-intent/:courseId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "create-intent", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here",
+									"description": "The ID of the course to create payment intent for"
+								}
+							]
+						},
+						"description": "Create a Stripe payment intent for course enrollment. Returns clientSecret for Stripe.js"
+					}
+				},
+				{
+					"name": "Confirm Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/confirm/:paymentIntentId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "confirm", ":paymentIntentId"],
+							"variable": [
+								{
+									"key": "paymentIntentId",
+									"value": "payment-intent-id-here",
+									"description": "The ID of the payment intent to confirm"
+								}
+							]
+						},
+						"description": "Confirm Stripe payment and create enrollment"
+					}
+				},
+				{
+					"name": "Get Payment Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/status/:paymentIntentId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "status", ":paymentIntentId"],
+							"variable": [
+								{
+									"key": "paymentIntentId",
+									"value": "payment-intent-id-here",
+									"description": "The ID of the payment intent to check status"
+								}
+							]
+						},
+						"description": "Get payment status from Stripe"
+					}
+				},
+				{
+					"name": "Download Invoice",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/payments/invoice/:paymentIntentId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "payments", "invoice", ":paymentIntentId"],
+							"variable": [
+								{
+									"key": "paymentIntentId",
+									"value": "payment-intent-id-here",
+									"description": "The ID of the payment intent to generate invoice for"
+								}
+							]
+						},
+						"description": "Download invoice PDF for a payment"
+					}
+				}
+			]
+		},
+		{
+			"name": "Courses",
+			"item": [
+				{
+					"name": "Create Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "course",
+									"value": "{\n    \"name\": \"Introduction to Programming\",\n    \"description\": \"Learn the basics of programming\",\n    \"price\": 99.99,\n    \"sections\": [\n        {\n            \"name\": \"Getting Started\",\n            \"videos\": [\n                {\n                    \"name\": \"Welcome to the Course\"\n                },\n                {\n                    \"name\": \"Setting Up Your Environment\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Basic Concepts\",\n            \"videos\": [\n                {\n                    \"name\": \"Variables and Data Types\"\n                },\n                {\n                    \"name\": \"Control Flow\"\n                }\n            ]\n        }\n    ]\n}",
+									"type": "text"
+								},
+								{
+									"key": "videos[0]",
+									"type": "file",
+									"src": "/path/to/video1.mp4"
+								},
+								{
+									"key": "videos[1]",
+									"type": "file",
+									"src": "/path/to/video2.mp4"
+								},
+								{
+									"key": "videos[2]",
+									"type": "file",
+									"src": "/path/to/video3.mp4"
+								},
+								{
+									"key": "videos[3]",
+									"type": "file",
+									"src": "/path/to/video4.mp4"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/courses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses"]
+						},
+						"description": "Create a new course with video files (Admin only)"
+					}
+				},
+				{
+					"name": "Update Course",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "course",
+									"value": "{\n    \"name\": \"Updated Course Name\",\n    \"description\": \"Updated course description\",\n    \"price\": 149.99,\n    \"sections\": [\n        {\n            \"name\": \"Updated Section 1\",\n            \"videos\": [\n                {\n                    \"name\": \"Updated Video 1\"\n                },\n                {\n                    \"name\": \"Updated Video 2\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Updated Section 2\",\n            \"videos\": [\n                {\n                    \"name\": \"Updated Video 3\"\n                }\n            ]\n        }\n    ]\n}",
+									"type": "text"
+								},
+								{
+									"key": "videos[0]",
+									"type": "file",
+									"src": "/path/to/updated-video1.mp4"
+								},
+								{
+									"key": "videos[1]",
+									"type": "file",
+									"src": "/path/to/updated-video2.mp4"
+								},
+								{
+									"key": "videos[2]",
+									"type": "file",
+									"src": "/path/to/updated-video3.mp4"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/courses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "course-id-here",
+									"description": "The ID of the course to update"
+								}
+							]
+						},
+						"description": "Update an existing course with new sections and videos (Admin only)"
+					}
+				},
+				{
+					"name": "Delete Course",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/courses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "course-id-here",
+									"description": "The ID of the course to delete"
+								}
+							]
+						},
+						"description": "Delete a course (Admin only)"
+					}
+				},
+				{
+					"name": "Get Course",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/courses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "course-id-here",
+									"description": "The ID of the course to retrieve"
+								}
+							]
+						},
+						"description": "Get a specific course by ID"
+					}
+				},
+				{
+					"name": "Get All Courses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/courses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses"]
+						},
+						"description": "Get all available courses"
+					}
+				},
+				{
+					"name": "Add Section to Course",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "section",
+									"value": "{\n    \"name\": \"Advanced Topics\",\n    \"videos\": [\n        {\n            \"name\": \"Advanced Concept 1\"\n        },\n        {\n            \"name\": \"Advanced Concept 2\"\n        }\n    ]\n}",
+									"type": "text"
+								},
+								{
+									"key": "videos[0]",
+									"type": "file",
+									"src": "/path/to/video1.mp4"
+								},
+								{
+									"key": "videos[1]",
+									"type": "file",
+									"src": "/path/to/video2.mp4"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/courses/:courseId/sections",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", ":courseId", "sections"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here",
+									"description": "The ID of the course to add the section to"
+								}
+							]
+						},
+						"description": "Add a new section with videos to an existing course (Admin only)"
+					}
+				},
+				{
+					"name": "Patch Course",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "course",
+									"value": "{\n    \"name\": \"Updated Course Name\",\n    \"sections\": [\n        {\n            \"id\": \"section-id-here\",\n            \"name\": \"Updated Section Name\",\n            \"videos\": [\n                {\n                    \"id\": \"video-id-here\",\n                    \"name\": \"Updated Video Name\"\n                },\n                {\n                    \"name\": \"New Video\"\n                }\n            ]\n        },\n        {\n            \"name\": \"New Section\",\n            \"videos\": [\n                {\n                    \"name\": \"New Section Video\"\n                }\n            ]\n        }\n    ]\n}",
+									"type": "text"
+								},
+								{
+									"key": "videos[0]",
+									"type": "file",
+									"src": "/path/to/updated-video.mp4"
+								},
+								{
+									"key": "videos[1]",
+									"type": "file",
+									"src": "/path/to/new-video.mp4"
+								},
+								{
+									"key": "videos[2]",
+									"type": "file",
+									"src": "/path/to/new-section-video.mp4"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/courses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "course-id-here",
+									"description": "The ID of the course to patch"
+								}
+							]
+						},
+						"description": "Partially update a course, allowing specific updates to sections and videos (Admin only)"
+					}
+				},
+				{
+					"name": "Get Enrolled Courses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/courses/enrolled",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", "enrolled"]
+						},
+						"description": "Get all courses the user is enrolled in with progress information"
+					}
+				},
+				{
+					"name": "Get Enrolled Course",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/courses/:id/enrolled",
+							"host": ["{{base_url}}"],
+							"path": ["api", "courses", ":id", "enrolled"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "course-id-here",
+									"description": "The ID of the course to get enrolled information for"
+								}
+							]
+						},
+						"description": "Get detailed information about a specific enrolled course with progress"
+					}
+				}
+			]
+		},
+		{
+			"name": "Progress",
+			"item": [
+				{
+					"name": "Get Course Progress",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/progress/courses/:courseId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "progress", "courses", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here",
+									"description": "The ID of the course to get progress for"
+								}
+							]
+						},
+						"description": "Get progress for a specific course"
+					}
+				},
+				{
+					"name": "Get All Progress",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/progress",
+							"host": ["{{base_url}}"],
+							"path": ["api", "progress"]
+						},
+						"description": "Get all progress for the current user"
+					}
+				},
+				{
+					"name": "Update Video Progress",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"progress\": 0.75,\n    \"lastPosition\": 120.5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/progress/videos/:videoId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "progress", "videos", ":videoId"],
+							"variable": [
+								{
+									"key": "videoId",
+									"value": "video-id-here",
+									"description": "The ID of the video to update progress for"
+								}
+							]
+						},
+						"description": "Update progress for a specific video"
+					}
+				},
+				{
+					"name": "Reset Course Progress",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/progress/courses/:courseId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "progress", "courses", ":courseId"],
+							"variable": [
+								{
+									"key": "courseId",
+									"value": "course-id-here",
+									"description": "The ID of the course to reset progress for"
+								}
+							]
+						},
+						"description": "Reset all progress for a specific course"
+					}
+				}
+			]
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users"]
+						},
+						"description": "Get all users (Admin only)"
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/:userId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-id-here",
+									"description": "The ID of the user to get"
+								}
+							]
+						},
+						"description": "Get a specific user by ID (Admin only)"
+					}
+				},
+				{
+					"name": "Update User Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"BLOCKED\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/:userId/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":userId", "status"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-id-here",
+									"description": "The ID of the user to update status"
+								}
+							]
+						},
+						"description": "Update user status (block/unblock) (Admin only)"
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/:userId",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-id-here",
+									"description": "The ID of the user to delete"
+								}
+							]
+						},
+						"description": "Delete a user (Admin only)"
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "your-auth-token-here",
+			"type": "string"
+		}
+	]
+} 
