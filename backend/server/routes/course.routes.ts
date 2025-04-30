@@ -9,7 +9,11 @@ const courseService = CourseService.getInstance();
 // Create a new course (admin only)
 router.post('/', authMiddleware, adminMiddleware, upload.fields([
   { name: 'thumbnail', maxCount: 1 },
-  { name: 'videos', maxCount: 10 }
+  { name: 'videos[0]', maxCount: 10 },
+  { name: 'videos[1]', maxCount: 10 },
+  { name: 'videos[2]', maxCount: 10 },
+  { name: 'videos[3]', maxCount: 10 },
+  { name: 'videos[4]', maxCount: 10 }
 ]), async (req, res) => {
   try {
     const courseData = JSON.parse(req.body.course);
@@ -17,18 +21,19 @@ router.post('/', authMiddleware, adminMiddleware, upload.fields([
     
     // Add thumbnail path if provided
     if (files.thumbnail && files.thumbnail.length > 0) {
-      courseData.thumbnail = files.thumbnail[0].path;
+      courseData.thumbnail = files.thumbnail[0].path.replace(/\\/g, '/');
     }
     
     // Add file paths to the course data
-    if (files.videos && files.videos.length > 0) {
+    if (courseData.sections) {
       courseData.sections = courseData.sections.map((section: any, index: number) => {
-        const sectionFiles = files.videos.filter(file => file.fieldname === `videos[${index}]`);
+        const sectionFiles = files[`videos[${index}]`] || [];
         return {
           ...section,
           videos: section.videos.map((video: any, videoIndex: number) => ({
             ...video,
-            filePath: sectionFiles[videoIndex]?.path
+            filePath: sectionFiles[videoIndex]?.path?.replace(/\\/g, '/'),
+            duration: video.duration
           }))
         };
       });
@@ -45,7 +50,11 @@ router.post('/', authMiddleware, adminMiddleware, upload.fields([
 // Update a course (admin only)
 router.put('/:id', authMiddleware, adminMiddleware, upload.fields([
   { name: 'thumbnail', maxCount: 1 },
-  { name: 'videos', maxCount: 10 }
+  { name: 'videos[0]', maxCount: 10 },
+  { name: 'videos[1]', maxCount: 10 },
+  { name: 'videos[2]', maxCount: 10 },
+  { name: 'videos[3]', maxCount: 10 },
+  { name: 'videos[4]', maxCount: 10 }
 ]), async (req, res) => {
   try {
     const courseId = req.params.id;
@@ -54,18 +63,19 @@ router.put('/:id', authMiddleware, adminMiddleware, upload.fields([
     
     // Add thumbnail path if provided
     if (files.thumbnail && files.thumbnail.length > 0) {
-      courseData.thumbnail = files.thumbnail[0].path;
+      courseData.thumbnail = files.thumbnail[0].path.replace(/\\/g, '/');
     }
     
     // Add file paths to the course data
-    if (files.videos && files.videos.length > 0) {
+    if (courseData.sections) {
       courseData.sections = courseData.sections.map((section: any, index: number) => {
-        const sectionFiles = files.videos.filter(file => file.fieldname === `videos[${index}]`);
+        const sectionFiles = files[`videos[${index}]`] || [];
         return {
           ...section,
           videos: section.videos.map((video: any, videoIndex: number) => ({
             ...video,
-            filePath: sectionFiles[videoIndex]?.path
+            filePath: sectionFiles[videoIndex]?.path?.replace(/\\/g, '/'),
+            duration: video.duration
           }))
         };
       });
@@ -92,7 +102,7 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 // Get a specific course
 router.get('/:id', async (req, res) => {
   try {
-    const course = await courseService.getCourse(req.params.id);
+    const course = await courseService.getCourseById(req.params.id);
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }

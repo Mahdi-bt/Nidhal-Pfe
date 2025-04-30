@@ -72,6 +72,7 @@ model Video {
   id        String    @id @default(uuid())
   name      String
   filePath  String?
+  duration  Int       @default(0)  // Duration in minutes
   section   Section   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   sectionId String
   progress  VideoProgress[]

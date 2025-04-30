@@ -1,6 +1,26 @@
-import { PrismaClient, Course, Section, Video, Prisma, CourseLevel } from '@prisma/client';
+import { PrismaClient, type Course, type Section, type Video, type Prisma } from '@prisma/client';
 
-const prisma = new PrismaClient();
+interface VideoData {
+  name: string;
+  filePath: string;
+  duration: number;
+}
+
+interface SectionData {
+  name: string;
+  videos: VideoData[];
+}
+
+interface CourseData {
+  name: string;
+  description: string;
+  price: number;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  category: string;
+  duration: number;
+  thumbnail?: string;
+  sections: SectionData[];
+}
 
 interface VideoProgress {
   id: string;
@@ -10,14 +30,12 @@ interface VideoProgress {
   lastPosition: number;
 }
 
-interface SectionWithVideos {
-  id: string;
-  name: string;
-  videos: {
-    id: string;
-    name: string;
-    filePath: string | null;
-  }[];
+interface SectionWithVideos extends Section {
+  videos: Video[];
+}
+
+interface CourseWithSections extends Course {
+  sections: SectionWithVideos[];
 }
 
 interface EnrollmentWithCourse {
@@ -36,17 +54,20 @@ interface EnrollmentWithCourse {
 }
 
 type CourseCreateInput = Omit<Prisma.CourseCreateInput, 'level'> & {
-  level: CourseLevel;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 };
 
 type CourseUpdateInput = Omit<Prisma.CourseUpdateInput, 'level'> & {
-  level?: CourseLevel;
+  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 };
 
 export class CourseService {
   private static instance: CourseService;
+  private prisma: PrismaClient;
 
-  private constructor() {}
+  private constructor() {
+    this.prisma = new PrismaClient();
+  }
 
   public static getInstance(): CourseService {
     if (!CourseService.instance) {
@@ -55,73 +76,117 @@ export class CourseService {
     return CourseService.instance;
   }
 
-  async createCourse(data: CourseCreateInput) {
-    return prisma.course.create({
-      data,
+  async createCourse(data: CourseData) {
+    const courseData = {
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      level: data.level,
+      category: data.category,
+      duration: data.duration,
+      thumbnail: data.thumbnail,
+      sections: {
+        create: data.sections.map(section => ({
+          name: section.name,
+          videos: {
+            create: section.videos.map(video => ({
+              name: video.name,
+              filePath: video.filePath,
+              duration: video.duration
+            }))
+          }
+        }))
+      }
+    } as Prisma.CourseCreateInput;
+
+    return this.prisma.course.create({
+      data: courseData,
       include: {
         sections: {
           include: {
-            videos: true,
-          },
-        },
-      },
+            videos: true
+          }
+        }
+      }
     });
   }
 
-  async updateCourse(id: string, data: CourseUpdateInput) {
-    // First, delete existing sections and videos
-    await prisma.section.deleteMany({
-      where: { courseId: id },
+  async updateCourse(id: string, data: CourseData) {
+    // First delete existing sections and videos
+    await this.prisma.section.deleteMany({
+      where: { courseId: id }
     });
+
+    const courseData = {
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      level: data.level,
+      category: data.category,
+      duration: data.duration,
+      thumbnail: data.thumbnail,
+      sections: {
+        create: data.sections.map(section => ({
+          name: section.name,
+          videos: {
+            create: section.videos.map(video => ({
+              name: video.name,
+              filePath: video.filePath,
+              duration: video.duration
+            }))
+          }
+        }))
+      }
+    } as Prisma.CourseUpdateInput;
 
     // Then update the course with new data
-    return prisma.course.update({
+    return this.prisma.course.update({
       where: { id },
-      data,
+      data: courseData,
       include: {
         sections: {
           include: {
-            videos: true,
-          },
-        },
-      },
+            videos: true
+          }
+        }
+      }
     });
   }
 
-  async deleteCourse(id: string) {
-    return prisma.course.delete({
-      where: { id },
+  async deleteCourse(id: string): Promise<Course> {
+    return this.prisma.course.delete({
+      where: { id }
     });
   }
 
-  async getCourse(id: string) {
-    return prisma.course.findUnique({
+  async getCourseById(id: string): Promise<CourseWithSections | null> {
+    return this.prisma.course.findUnique({
       where: { id },
       include: {
         sections: {
           include: {
-            videos: true,
-          },
-        },
-      },
-    });
+            videos: true
+          }
+        }
+      }
+    }) as Promise<CourseWithSections | null>;
   }
 
-  async getAllCourses() {
-    return prisma.course.findMany({
+  async getAllCourses(): Promise<CourseWithSections[]> {
+    return this.prisma.course.findMany({
       include: {
         sections: {
           include: {
-            videos: true,
-          },
-        },
-      },
-    });
+            videos: true
+          }
+        }
+      }
+    }) as Promise<CourseWithSections[]>;
   }
 
   async addSection(courseId: string, sectionData: { name: string; videos: { name: string; filePath?: string }[] }) {
     // First check if the course exists
-    const course = await prisma.course.findUnique({
+    const course = await this.prisma.course.findUnique({
       where: { id: courseId },
       include: {
         sections: true
@@ -133,7 +198,7 @@ export class CourseService {
     }
 
     // Add the new section
-    return prisma.course.update({
+    return this.prisma.course.update({
       where: { id: courseId },
       data: {
         sections: {
@@ -176,7 +241,7 @@ export class CourseService {
     }
   ) {
     // First, get the existing course
-    const existingCourse = await prisma.course.findUnique({
+    const existingCourse = await this.prisma.course.findUnique({
       where: { id },
       include: {
         sections: {
@@ -203,7 +268,7 @@ export class CourseService {
       for (const sectionData of data.sections) {
         if (sectionData.id) {
           // Update existing section
-          await prisma.section.update({
+          await this.prisma.section.update({
             where: { id: sectionData.id },
             data: {
               name: sectionData.name,
@@ -234,7 +299,7 @@ export class CourseService {
           });
         } else {
           // Create new section
-          await prisma.section.create({
+          await this.prisma.section.create({
             data: {
               name: sectionData.name || '',
               courseId: id,
@@ -251,7 +316,7 @@ export class CourseService {
     }
 
     // Return the updated course
-    return prisma.course.findUnique({
+    return this.prisma.course.findUnique({
       where: { id },
       include: {
         sections: {
@@ -265,7 +330,7 @@ export class CourseService {
 
   async getEnrolledCourses(userId: string) {
     // Get all active enrollments for the user
-    const enrollments = await prisma.enrollment.findMany({
+    const enrollments = await this.prisma.enrollment.findMany({
       where: {
         userId,
         status: 'ACTIVE'
@@ -286,7 +351,7 @@ export class CourseService {
     // Get progress for each course
     const coursesWithProgress = await Promise.all(
       enrollments.map(async (enrollment) => {
-        const courseProgress = await prisma.courseProgress.findUnique({
+        const courseProgress = await this.prisma.courseProgress.findUnique({
           where: {
             userId_courseId: {
               userId,
@@ -346,7 +411,7 @@ export class CourseService {
 
   async getEnrolledCourse(userId: string, courseId: string) {
     // Get the enrollment
-    const enrollment = await prisma.enrollment.findUnique({
+    const enrollment = await this.prisma.enrollment.findUnique({
       where: {
         userId_courseId: {
           userId,
@@ -371,7 +436,7 @@ export class CourseService {
     }
 
     // Get course progress
-    const courseProgress = await prisma.courseProgress.findUnique({
+    const courseProgress = await this.prisma.courseProgress.findUnique({
       where: {
         userId_courseId: {
           userId,
@@ -422,6 +487,86 @@ export class CourseService {
         completed: courseProgress?.completed || false,
         sections: sectionsWithProgress
       }
+    };
+  }
+
+  async getCourseProgress(userId: string, courseId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        sections: {
+          include: {
+            videos: true
+          }
+        }
+      }
+    });
+
+    if (!course) {
+      throw new Error('Course not found');
+    }
+
+    const courseProgress = await this.prisma.courseProgress.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId
+        }
+      },
+      include: {
+        videoProgress: true
+      }
+    });
+
+    if (!courseProgress) {
+      return {
+        courseId,
+        userId,
+        progress: 0,
+        completed: false,
+        sections: course.sections.map(section => ({
+          id: section.id,
+          name: section.name,
+          progress: 0,
+          videoProgress: []
+        }))
+      };
+    }
+
+    const sections = course.sections.map(section => {
+      const sectionVideoProgress = section.videos.map(video => {
+        const progress = courseProgress.videoProgress.find(vp => vp.videoId === video.id);
+        return {
+          id: video.id,
+          name: video.name,
+          progress: progress ? progress.progress : 0,
+          watched: progress ? progress.watched : false,
+          lastPosition: progress ? progress.lastPosition : 0
+        };
+      });
+
+      const sectionProgress = sectionVideoProgress.length > 0
+        ? sectionVideoProgress.reduce((sum, video) => sum + video.progress, 0) / sectionVideoProgress.length
+        : 0;
+
+      return {
+        id: section.id,
+        name: section.name,
+        progress: sectionProgress,
+        videoProgress: sectionVideoProgress
+      };
+    });
+
+    const totalProgress = sections.length > 0
+      ? sections.reduce((sum, section) => sum + section.progress, 0) / sections.length
+      : 0;
+
+    return {
+      courseId,
+      userId,
+      progress: totalProgress,
+      completed: totalProgress >= 100,
+      sections
     };
   }
 } 
