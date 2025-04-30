@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '@/lib/api';
@@ -19,9 +18,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
         <div className="absolute top-2 right-2">
           <span className={`
             badge 
-            ${course.level === 'Beginner' ? 'badge-success' : ''}
-            ${course.level === 'Intermediate' ? 'badge-info' : ''}
-            ${course.level === 'Advanced' ? 'badge-danger' : ''}
+            ${course.level === 'BEGINNER' ? 'badge-success' : ''}
+            ${course.level === 'INTERMEDIATE' ? 'badge-info' : ''}
+            ${course.level === 'ADVANCED' ? 'badge-danger' : ''}
           `}>
             {course.level}
           </span>

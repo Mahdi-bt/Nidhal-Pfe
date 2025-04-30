@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/sonner";
 
 // Define base API URL
@@ -18,7 +17,7 @@ export interface Course {
   name: string;
   description: string;
   price: number;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
   category: string;
   duration: number; // in weeks
   enrolledStudents: number;
@@ -34,10 +33,11 @@ export interface Section {
 }
 
 export interface Video {
-  id: string;
+  id?: string;
   name: string;
-  duration: number; // in seconds
-  url: string;
+  url?: string;
+  duration: number;
+  file?: File;
 }
 
 export interface Enrollment {
@@ -113,7 +113,7 @@ const mockCourses: Course[] = [
     name: 'Web Development Bootcamp',
     description: 'Learn modern web development from scratch. Master HTML, CSS, JavaScript, and popular frameworks.',
     price: 299,
-    level: 'Beginner',
+    level: 'BEGINNER',
     category: 'Web Development',
     duration: 12,
     enrolledStudents: 15,
@@ -163,7 +163,7 @@ const mockCourses: Course[] = [
     name: 'Data Science Fundamentals',
     description: 'Master the fundamentals of data science, including Python, statistics, and machine learning.',
     price: 399,
-    level: 'Intermediate',
+    level: 'INTERMEDIATE',
     category: 'Data Science',
     duration: 16,
     enrolledStudents: 12,
@@ -195,7 +195,7 @@ const mockCourses: Course[] = [
     name: 'Mobile App Development',
     description: 'Learn to build native mobile applications for iOS and Android using React Native.',
     price: 349,
-    level: 'Intermediate',
+    level: 'INTERMEDIATE',
     category: 'Mobile Development',
     duration: 14,
     enrolledStudents: 8,
@@ -240,74 +240,52 @@ const mockEnrollments: Enrollment[] = [
 // Authentication functions
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/auth/login`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(credentials),
-    // });
-    
-    // Mock authentication logic
-    const user = mockUsers.find(u => u.email === credentials.email);
-    
-    if (!user) {
-      throw new Error('Invalid credentials');
+    const response = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to login');
     }
+
+    const data = await response.json();
     
-    if (credentials.password !== 'password123') {
-      throw new Error('Invalid credentials');
-    }
+    // Store the token in localStorage
+    localStorage.setItem('token', data.token);
     
-    // Mock token
-    const token = 'mock-jwt-token';
+    // Store user data in localStorage
+    localStorage.setItem('user', JSON.stringify(data.user));
     
-    // Store token in localStorage
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    
-    return { user, token };
+    return data;
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to login';
-    toast.error(message);
+    console.error('Login error:', error);
     throw error;
   }
 }
 
 export async function register(credentials: RegisterCredentials): Promise<AuthResponse> {
   try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/auth/register`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(credentials),
-    // });
-    
-    // Check if email exists
-    const existingUser = mockUsers.find(u => u.email === credentials.email);
-    
-    if (existingUser) {
-      throw new Error('Email already exists');
+    const response = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to register');
     }
-    
-    // Create new user
-    const newUser: User = {
-      id: `${mockUsers.length + 1}`,
-      name: credentials.name,
-      email: credentials.email,
-      role: 'student',
-      createdAt: new Date().toISOString(),
-    };
-    
-    mockUsers.push(newUser);
-    
-    // Mock token
-    const token = 'mock-jwt-token';
+
+    const data = await response.json();
     
     // Store token in localStorage
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
     
-    return { user: newUser, token };
+    return data;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to register';
     toast.error(message);
@@ -316,7 +294,7 @@ export async function register(credentials: RegisterCredentials): Promise<AuthRe
 }
 
 export function logout(): void {
-  localStorage.removeItem('auth_token');
+  localStorage.removeItem('token');
   localStorage.removeItem('user');
   window.location.href = '/';
 }
@@ -327,7 +305,7 @@ export function getCurrentUser(): User | null {
 }
 
 export function isAuthenticated(): boolean {
-  return !!localStorage.getItem('auth_token');
+  return !!localStorage.getItem('token');
 }
 
 export function isAdmin(): boolean {
@@ -338,10 +316,14 @@ export function isAdmin(): boolean {
 // Course functions
 export async function getAllCourses(): Promise<Course[]> {
   try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/courses`);
-    
-    return mockCourses;
+    const response = await fetch(`${BASE_URL}/courses`);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch courses');
+    }
+
+    return await response.json();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch courses';
     toast.error(message);
@@ -351,16 +333,14 @@ export async function getAllCourses(): Promise<Course[]> {
 
 export async function getCourseById(id: string): Promise<Course> {
   try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/courses/${id}`);
-    
-    const course = mockCourses.find(c => c.id === id);
-    
-    if (!course) {
-      throw new Error('Course not found');
+    const response = await fetch(`${BASE_URL}/courses/${id}`);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch course');
     }
-    
-    return course;
+
+    return await response.json();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch course';
     toast.error(message);
@@ -368,25 +348,23 @@ export async function getCourseById(id: string): Promise<Course> {
   }
 }
 
+// Helper function to get the auth header
+const getAuthHeader = () => ({
+  'Authorization': `Bearer ${localStorage.getItem('token')}`
+});
+
 export async function getEnrolledCourses(userId: string): Promise<(Course & { progress: number })[]> {
   try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/courses/enrolled`);
-    
-    const enrollments = mockEnrollments.filter(e => e.userId === userId);
-    
-    return enrollments.map(enrollment => {
-      const course = mockCourses.find(c => c.id === enrollment.courseId);
-      
-      if (!course) {
-        throw new Error('Course not found');
-      }
-      
-      return {
-        ...course,
-        progress: enrollment.progress,
-      };
+    const response = await fetch(`${BASE_URL}/courses/enrolled`, {
+      headers: getAuthHeader(),
     });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch enrolled courses');
+    }
+
+    return await response.json();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch enrolled courses';
     toast.error(message);
@@ -394,82 +372,41 @@ export async function getEnrolledCourses(userId: string): Promise<(Course & { pr
   }
 }
 
-export async function createCourse(course: Omit<Course, 'id' | 'createdAt'>): Promise<Course> {
-  try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/courses`, {
-    //   method: 'POST',
-    //   headers: { 
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-    //   },
-    //   body: JSON.stringify(course),
-    // });
-    
-    const newCourse: Course = {
-      ...course,
-      id: `${mockCourses.length + 1}`,
-      createdAt: new Date().toISOString(),
-    };
-    
-    mockCourses.push(newCourse);
-    
-    return newCourse;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create course';
-    toast.error(message);
-    throw error;
+export const createCourse = async (formData: FormData): Promise<Course> => {
+  const response = await fetch(`${BASE_URL}/courses`, {
+    method: 'POST',
+    headers: getAuthHeader(),
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error('Failed to create course');
   }
-}
+  return response.json();
+};
 
-export async function updateCourse(id: string, course: Partial<Course>): Promise<Course> {
-  try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/courses/${id}`, {
-    //   method: 'PUT',
-    //   headers: { 
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-    //   },
-    //   body: JSON.stringify(course),
-    // });
-    
-    const courseIndex = mockCourses.findIndex(c => c.id === id);
-    
-    if (courseIndex === -1) {
-      throw new Error('Course not found');
-    }
-    
-    mockCourses[courseIndex] = {
-      ...mockCourses[courseIndex],
-      ...course,
-    };
-    
-    return mockCourses[courseIndex];
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update course';
-    toast.error(message);
-    throw error;
+export const updateCourse = async (id: string, formData: FormData): Promise<Course> => {
+  const response = await fetch(`${BASE_URL}/courses/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeader(),
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update course');
   }
-}
+  return response.json();
+};
 
 export async function deleteCourse(id: string): Promise<void> {
   try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/courses/${id}`, {
-    //   method: 'DELETE',
-    //   headers: { 
-    //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-    //   },
-    // });
-    
-    const courseIndex = mockCourses.findIndex(c => c.id === id);
-    
-    if (courseIndex === -1) {
-      throw new Error('Course not found');
+    const response = await fetch(`${BASE_URL}/courses/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to delete course');
     }
-    
-    mockCourses.splice(courseIndex, 1);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete course';
     toast.error(message);
@@ -479,47 +416,17 @@ export async function deleteCourse(id: string): Promise<void> {
 
 export async function enrollInCourse(courseId: string): Promise<Enrollment> {
   try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/courses/${courseId}/enroll`, {
-    //   method: 'POST',
-    //   headers: { 
-    //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-    //   },
-    // });
-    
-    const user = getCurrentUser();
-    
-    if (!user) {
-      throw new Error('User not authenticated');
+    const response = await fetch(`${BASE_URL}/courses/${courseId}/enroll`, {
+      method: 'POST',
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to enroll in course');
     }
-    
-    const course = mockCourses.find(c => c.id === courseId);
-    
-    if (!course) {
-      throw new Error('Course not found');
-    }
-    
-    // Check if already enrolled
-    const existingEnrollment = mockEnrollments.find(
-      e => e.courseId === courseId && e.userId === user.id
-    );
-    
-    if (existingEnrollment) {
-      return existingEnrollment;
-    }
-    
-    const newEnrollment: Enrollment = {
-      id: `e${mockEnrollments.length + 1}`,
-      courseId,
-      userId: user.id,
-      progress: 0,
-      startedAt: new Date().toISOString(),
-      completedAt: null,
-    };
-    
-    mockEnrollments.push(newEnrollment);
-    
-    return newEnrollment;
+
+    return await response.json();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to enroll in course';
     toast.error(message);
@@ -530,14 +437,16 @@ export async function enrollInCourse(courseId: string): Promise<Enrollment> {
 // User functions
 export async function getAllUsers(): Promise<User[]> {
   try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/users`, {
-    //   headers: { 
-    //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-    //   },
-    // });
-    
-    return mockUsers;
+    const response = await fetch(`${BASE_URL}/users`, {
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch users');
+    }
+
+    return await response.json();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to fetch users';
     toast.error(message);
@@ -550,34 +459,28 @@ export async function updateUserProfile(
   data: { name?: string; email?: string; currentPassword?: string; newPassword?: string }
 ): Promise<User> {
   try {
-    // In a real app, this would be a fetch request
-    // const response = await fetch(`${BASE_URL}/users/profile`, {
-    //   method: 'PUT',
-    //   headers: { 
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-    //   },
-    //   body: JSON.stringify(data),
-    // });
-    
-    const userIndex = mockUsers.findIndex(u => u.id === userId);
-    
-    if (userIndex === -1) {
-      throw new Error('User not found');
+    const response = await fetch(`${BASE_URL}/users/profile`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update profile');
     }
-    
-    mockUsers[userIndex] = {
-      ...mockUsers[userIndex],
-      name: data.name || mockUsers[userIndex].name,
-      email: data.email || mockUsers[userIndex].email,
-    };
+
+    const updatedUser = await response.json();
     
     // Update stored user if it's the current user
     if (getCurrentUser()?.id === userId) {
-      localStorage.setItem('user', JSON.stringify(mockUsers[userIndex]));
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     }
     
-    return mockUsers[userIndex];
+    return updatedUser;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update profile';
     toast.error(message);
@@ -658,57 +561,121 @@ export async function updateVideoProgress(
   data: { progress: number; lastPosition: number }
 ): Promise<Progress> {
   try {
-    // In a real app, this would be a fetch request
-    // await fetch(`${BASE_URL}/progress/videos/${videoId}`, {
-    //   method: 'POST',
-    //   headers: { 
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-    //   },
-    //   body: JSON.stringify(data),
-    // });
-    
-    // For mock data, we'll just log this
-    console.log(`Updated progress for video ${videoId}:`, data);
-    
-    // Find course ID from video ID
-    let courseId = '';
-    for (const course of mockCourses) {
-      for (const section of course.sections) {
-        const video = section.videos.find(v => v.id === videoId);
-        if (video) {
-          courseId = course.id;
-          break;
-        }
-      }
-      if (courseId) break;
+    const response = await fetch(`${BASE_URL}/progress/videos/${videoId}`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update progress');
     }
-    
-    if (!courseId) {
-      throw new Error('Video not found');
-    }
-    
-    // Update enrollment progress
-    const user = getCurrentUser();
-    if (user) {
-      const enrollmentIndex = mockEnrollments.findIndex(
-        e => e.courseId === courseId && e.userId === user.id
-      );
-      
-      if (enrollmentIndex !== -1) {
-        mockEnrollments[enrollmentIndex].progress = data.progress * 100;
-      }
-    }
-    
-    return {
-      courseId,
-      videoId,
-      progress: data.progress,
-      lastPosition: data.lastPosition,
-      completed: data.progress >= 0.95, // 95% is considered complete
-    };
+
+    return await response.json();
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to update progress';
+    toast.error(message);
+    throw error;
+  }
+}
+
+// Payment functions
+export async function createPaymentIntent(courseId: string): Promise<{ clientSecret: string }> {
+  try {
+    const response = await fetch(`${BASE_URL}/payments/create-intent/${courseId}`, {
+      method: 'POST',
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create payment intent');
+    }
+
+    return await response.json();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to create payment intent';
+    toast.error(message);
+    throw error;
+  }
+}
+
+export async function confirmPayment(paymentIntentId: string): Promise<Payment> {
+  try {
+    const response = await fetch(`${BASE_URL}/payments/confirm/${paymentIntentId}`, {
+      method: 'POST',
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to confirm payment');
+    }
+
+    return await response.json();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to confirm payment';
+    toast.error(message);
+    throw error;
+  }
+}
+
+export async function getPaymentStatus(paymentIntentId: string): Promise<Payment> {
+  try {
+    const response = await fetch(`${BASE_URL}/payments/status/${paymentIntentId}`, {
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get payment status');
+    }
+
+    return await response.json();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to get payment status';
+    toast.error(message);
+    throw error;
+  }
+}
+
+export async function getMyTransactions(): Promise<Payment[]> {
+  try {
+    const response = await fetch(`${BASE_URL}/payments/my-transactions`, {
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get transactions');
+    }
+
+    return await response.json();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to get transactions';
+    toast.error(message);
+    throw error;
+  }
+}
+
+export async function downloadInvoice(paymentIntentId: string): Promise<Blob> {
+  try {
+    const response = await fetch(`${BASE_URL}/payments/invoice/${paymentIntentId}`, {
+      headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to download invoice');
+    }
+
+    return await response.blob();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to download invoice';
     toast.error(message);
     throw error;
   }

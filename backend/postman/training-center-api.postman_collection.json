@@ -263,8 +263,13 @@
 							"formdata": [
 								{
 									"key": "course",
-									"value": "{\n    \"name\": \"Introduction to Programming\",\n    \"description\": \"Learn the basics of programming\",\n    \"price\": 99.99,\n    \"sections\": [\n        {\n            \"name\": \"Getting Started\",\n            \"videos\": [\n                {\n                    \"name\": \"Welcome to the Course\"\n                },\n                {\n                    \"name\": \"Setting Up Your Environment\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Basic Concepts\",\n            \"videos\": [\n                {\n                    \"name\": \"Variables and Data Types\"\n                },\n                {\n                    \"name\": \"Control Flow\"\n                }\n            ]\n        }\n    ]\n}",
+									"value": "{\n    \"name\": \"Introduction to Programming\",\n    \"description\": \"Learn the basics of programming\",\n    \"price\": 99.99,\n    \"thumbnail\": \"course-thumbnail.jpg\",\n    \"sections\": [\n        {\n            \"name\": \"Getting Started\",\n            \"videos\": [\n                {\n                    \"name\": \"Welcome to the Course\"\n                },\n                {\n                    \"name\": \"Setting Up Your Environment\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Basic Concepts\",\n            \"videos\": [\n                {\n                    \"name\": \"Variables and Data Types\"\n                },\n                {\n                    \"name\": \"Control Flow\"\n                }\n            ]\n        }\n    ]\n}",
 									"type": "text"
+								},
+								{
+									"key": "thumbnail",
+									"type": "file",
+									"src": "/path/to/thumbnail.jpg"
 								},
 								{
 									"key": "videos[0]",
@@ -293,7 +298,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "courses"]
 						},
-						"description": "Create a new course with video files (Admin only)"
+						"description": "Create a new course with video files and thumbnail (Admin only)"
 					}
 				},
 				{
@@ -311,8 +316,13 @@
 							"formdata": [
 								{
 									"key": "course",
-									"value": "{\n    \"name\": \"Updated Course Name\",\n    \"description\": \"Updated course description\",\n    \"price\": 149.99,\n    \"sections\": [\n        {\n            \"name\": \"Updated Section 1\",\n            \"videos\": [\n                {\n                    \"name\": \"Updated Video 1\"\n                },\n                {\n                    \"name\": \"Updated Video 2\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Updated Section 2\",\n            \"videos\": [\n                {\n                    \"name\": \"Updated Video 3\"\n                }\n            ]\n        }\n    ]\n}",
+									"value": "{\n    \"name\": \"Updated Course Name\",\n    \"description\": \"Updated course description\",\n    \"price\": 149.99,\n    \"thumbnail\": \"updated-thumbnail.jpg\",\n    \"sections\": [\n        {\n            \"name\": \"Updated Section 1\",\n            \"videos\": [\n                {\n                    \"name\": \"Updated Video 1\"\n                },\n                {\n                    \"name\": \"Updated Video 2\"\n                }\n            ]\n        },\n        {\n            \"name\": \"Updated Section 2\",\n            \"videos\": [\n                {\n                    \"name\": \"Updated Video 3\"\n                }\n            ]\n        }\n    ]\n}",
 									"type": "text"
+								},
+								{
+									"key": "thumbnail",
+									"type": "file",
+									"src": "/path/to/updated-thumbnail.jpg"
 								},
 								{
 									"key": "videos[0]",
@@ -343,7 +353,7 @@
 								}
 							]
 						},
-						"description": "Update an existing course with new sections and videos (Admin only)"
+						"description": "Update an existing course with new sections, videos, and thumbnail (Admin only)"
 					}
 				},
 				{
@@ -464,8 +474,13 @@
 							"formdata": [
 								{
 									"key": "course",
-									"value": "{\n    \"name\": \"Updated Course Name\",\n    \"sections\": [\n        {\n            \"id\": \"section-id-here\",\n            \"name\": \"Updated Section Name\",\n            \"videos\": [\n                {\n                    \"id\": \"video-id-here\",\n                    \"name\": \"Updated Video Name\"\n                },\n                {\n                    \"name\": \"New Video\"\n                }\n            ]\n        },\n        {\n            \"name\": \"New Section\",\n            \"videos\": [\n                {\n                    \"name\": \"New Section Video\"\n                }\n            ]\n        }\n    ]\n}",
+									"value": "{\n    \"name\": \"Updated Course Name\",\n    \"thumbnail\": \"updated-thumbnail.jpg\",\n    \"sections\": [\n        {\n            \"id\": \"section-id-here\",\n            \"name\": \"Updated Section Name\",\n            \"videos\": [\n                {\n                    \"id\": \"video-id-here\",\n                    \"name\": \"Updated Video Name\"\n                },\n                {\n                    \"name\": \"New Video\"\n                }\n            ]\n        },\n        {\n            \"name\": \"New Section\",\n            \"videos\": [\n                {\n                    \"name\": \"New Section Video\"\n                }\n            ]\n        }\n    ]\n}",
 									"type": "text"
+								},
+								{
+									"key": "thumbnail",
+									"type": "file",
+									"src": "/path/to/updated-thumbnail.jpg"
 								},
 								{
 									"key": "videos[0]",
@@ -496,7 +511,7 @@
 								}
 							]
 						},
-						"description": "Partially update a course, allowing specific updates to sections and videos (Admin only)"
+						"description": "Partially update a course, allowing specific updates to sections, videos, and thumbnail (Admin only)"
 					}
 				},
 				{

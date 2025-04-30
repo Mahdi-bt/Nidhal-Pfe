@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Course, Section, Video, Prisma, CourseLevel } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -16,7 +16,7 @@ interface SectionWithVideos {
   videos: {
     id: string;
     name: string;
-    filePath?: string;
+    filePath: string | null;
   }[];
 }
 
@@ -30,9 +30,18 @@ interface EnrollmentWithCourse {
     name: string;
     description: string;
     price: number;
+    thumbnail: string | null;
     sections: SectionWithVideos[];
   };
 }
+
+type CourseCreateInput = Omit<Prisma.CourseCreateInput, 'level'> & {
+  level: CourseLevel;
+};
+
+type CourseUpdateInput = Omit<Prisma.CourseUpdateInput, 'level'> & {
+  level?: CourseLevel;
+};
 
 export class CourseService {
   private static instance: CourseService;
@@ -46,29 +55,9 @@ export class CourseService {
     return CourseService.instance;
   }
 
-  async createCourse(data: {
-    name: string;
-    description: string;
-    price: number;
-    sections: { name: string; videos: { name: string; filePath?: string }[] }[];
-  }) {
+  async createCourse(data: CourseCreateInput) {
     return prisma.course.create({
-      data: {
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        sections: {
-          create: data.sections.map((section) => ({
-            name: section.name,
-            videos: {
-              create: section.videos.map((video) => ({
-                name: video.name,
-                filePath: video.filePath
-              })),
-            },
-          })),
-        },
-      },
+      data,
       include: {
         sections: {
           include: {
@@ -79,15 +68,7 @@ export class CourseService {
     });
   }
 
-  async updateCourse(
-    id: string,
-    data: {
-      name?: string;
-      description?: string;
-      price?: number;
-      sections?: { name: string; videos: { name: string; filePath?: string }[] }[];
-    }
-  ) {
+  async updateCourse(id: string, data: CourseUpdateInput) {
     // First, delete existing sections and videos
     await prisma.section.deleteMany({
       where: { courseId: id },
@@ -96,22 +77,7 @@ export class CourseService {
     // Then update the course with new data
     return prisma.course.update({
       where: { id },
-      data: {
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        sections: {
-          create: data.sections?.map((section) => ({
-            name: section.name,
-            videos: {
-              create: section.videos.map((video) => ({
-                name: video.name,
-                filePath: video.filePath
-              })),
-            },
-          })),
-        },
-      },
+      data,
       include: {
         sections: {
           include: {
@@ -319,7 +285,7 @@ export class CourseService {
 
     // Get progress for each course
     const coursesWithProgress = await Promise.all(
-      enrollments.map(async (enrollment: EnrollmentWithCourse) => {
+      enrollments.map(async (enrollment) => {
         const courseProgress = await prisma.courseProgress.findUnique({
           where: {
             userId_courseId: {
@@ -333,13 +299,13 @@ export class CourseService {
         });
 
         // Calculate progress for each section
-        const sectionsWithProgress = enrollment.course.sections.map((section: SectionWithVideos) => {
+        const sectionsWithProgress = enrollment.course.sections.map((section) => {
           const sectionVideos = section.videos;
           const videoProgress = courseProgress?.videoProgress.filter(
-            (vp: VideoProgress) => sectionVideos.some(v => v.id === vp.videoId)
+            (vp) => sectionVideos.some(v => v.id === vp.videoId)
           ) || [];
 
-          const watchedVideos = videoProgress.filter((vp: VideoProgress) => vp.watched).length;
+          const watchedVideos = videoProgress.filter((vp) => vp.watched).length;
           const sectionProgress = sectionVideos.length > 0 
             ? (watchedVideos / sectionVideos.length) 
             : 0;
@@ -353,10 +319,10 @@ export class CourseService {
 
         // Calculate overall course progress
         const totalVideos = enrollment.course.sections.reduce(
-          (sum: number, section: SectionWithVideos) => sum + section.videos.length, 
+          (sum, section) => sum + section.videos.length, 
           0
         );
-        const watchedVideos = courseProgress?.videoProgress.filter((vp: VideoProgress) => vp.watched).length || 0;
+        const watchedVideos = courseProgress?.videoProgress.filter((vp) => vp.watched).length || 0;
         const overallProgress = totalVideos > 0 ? (watchedVideos / totalVideos) : 0;
 
         return {

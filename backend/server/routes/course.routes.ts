@@ -1,21 +1,29 @@
 import { Router } from 'express';
 import { CourseService } from '../services/course.service';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware';
-import { upload } from '../config/upload.config';
+import { upload, uploadImage, uploadVideo } from '../config/upload.config';
 
 const router = Router();
 const courseService = CourseService.getInstance();
 
 // Create a new course (admin only)
-router.post('/', authMiddleware, adminMiddleware, upload.array('videos', 10), async (req, res) => {
+router.post('/', authMiddleware, adminMiddleware, upload.fields([
+  { name: 'thumbnail', maxCount: 1 },
+  { name: 'videos', maxCount: 10 }
+]), async (req, res) => {
   try {
     const courseData = JSON.parse(req.body.course);
-    const files = req.files as Express.Multer.File[];
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    
+    // Add thumbnail path if provided
+    if (files.thumbnail && files.thumbnail.length > 0) {
+      courseData.thumbnail = files.thumbnail[0].path;
+    }
     
     // Add file paths to the course data
-    if (files && files.length > 0) {
+    if (files.videos && files.videos.length > 0) {
       courseData.sections = courseData.sections.map((section: any, index: number) => {
-        const sectionFiles = files.filter(file => file.fieldname === `videos[${index}]`);
+        const sectionFiles = files.videos.filter(file => file.fieldname === `videos[${index}]`);
         return {
           ...section,
           videos: section.videos.map((video: any, videoIndex: number) => ({
@@ -29,21 +37,30 @@ router.post('/', authMiddleware, adminMiddleware, upload.array('videos', 10), as
     const course = await courseService.createCourse(courseData);
     res.status(201).json(course);
   } catch (error: any) {
+    console.error('Error creating course:', error);
     res.status(400).json({ message: error.message });
   }
 });
 
 // Update a course (admin only)
-router.put('/:id', authMiddleware, adminMiddleware, upload.array('videos', 10), async (req, res) => {
+router.put('/:id', authMiddleware, adminMiddleware, upload.fields([
+  { name: 'thumbnail', maxCount: 1 },
+  { name: 'videos', maxCount: 10 }
+]), async (req, res) => {
   try {
     const courseId = req.params.id;
     const courseData = JSON.parse(req.body.course);
-    const files = req.files as Express.Multer.File[];
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    
+    // Add thumbnail path if provided
+    if (files.thumbnail && files.thumbnail.length > 0) {
+      courseData.thumbnail = files.thumbnail[0].path;
+    }
     
     // Add file paths to the course data
-    if (files && files.length > 0) {
+    if (files.videos && files.videos.length > 0) {
       courseData.sections = courseData.sections.map((section: any, index: number) => {
-        const sectionFiles = files.filter(file => file.fieldname === `videos[${index}]`);
+        const sectionFiles = files.videos.filter(file => file.fieldname === `videos[${index}]`);
         return {
           ...section,
           videos: section.videos.map((video: any, videoIndex: number) => ({
@@ -57,6 +74,7 @@ router.put('/:id', authMiddleware, adminMiddleware, upload.array('videos', 10), 
     const course = await courseService.updateCourse(courseId, courseData);
     res.json(course);
   } catch (error: any) {
+    console.error('Error updating course:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -95,7 +113,7 @@ router.get('/', async (req, res) => {
 });
 
 // Add a section to a course (admin only)
-router.post('/:courseId/sections', authMiddleware, adminMiddleware, upload.array('videos', 10), async (req, res) => {
+router.post('/:courseId/sections', authMiddleware, adminMiddleware, uploadVideo.array('videos', 10), async (req, res) => {
   try {
     const courseId = req.params.courseId;
     const sectionData = JSON.parse(req.body.section);
@@ -112,12 +130,13 @@ router.post('/:courseId/sections', authMiddleware, adminMiddleware, upload.array
     const course = await courseService.addSection(courseId, sectionData);
     res.status(201).json(course);
   } catch (error: any) {
+    console.error('Error adding section:', error);
     res.status(400).json({ message: error.message });
   }
 });
 
 // Patch a course (admin only)
-router.patch('/:id', authMiddleware, adminMiddleware, upload.array('videos', 10), async (req, res) => {
+router.patch('/:id', authMiddleware, adminMiddleware, uploadVideo.array('videos', 10), async (req, res) => {
   try {
     const courseId = req.params.id;
     const courseData = JSON.parse(req.body.course);
@@ -146,6 +165,7 @@ router.patch('/:id', authMiddleware, adminMiddleware, upload.array('videos', 10)
     const course = await courseService.patchCourse(courseId, courseData);
     res.json(course);
   } catch (error: any) {
+    console.error('Error patching course:', error);
     res.status(400).json({ message: error.message });
   }
 });

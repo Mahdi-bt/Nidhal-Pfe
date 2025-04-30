@@ -19,8 +19,8 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter to only allow video files
-const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+// File filter for videos
+const videoFileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedMimeTypes = ['video/mp4', 'video/webm', 'video/ogg'];
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
@@ -29,10 +29,49 @@ const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.
   }
 };
 
-// Create multer instance
+// File filter for images
+const imageFileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only image files are allowed.'));
+  }
+};
+
+// Create multer instances
+export const uploadVideo = multer({
+  storage: storage,
+  fileFilter: videoFileFilter,
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB limit
+  }
+});
+
+export const uploadImage = multer({
+  storage: storage,
+  fileFilter: imageFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit for images
+  }
+});
+
+// Combined upload for both images and videos
 export const upload = multer({
   storage: storage,
-  fileFilter: fileFilter,
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      // Video types
+      'video/mp4', 'video/webm', 'video/ogg',
+      // Image types
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp'
+    ];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only video and image files are allowed.'));
+    }
+  },
   limits: {
     fileSize: 100 * 1024 * 1024, // 100MB limit
   }

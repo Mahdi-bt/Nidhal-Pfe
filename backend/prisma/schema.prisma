@@ -35,11 +35,21 @@ enum UserStatus {
   BLOCKED
 }
 
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
 model Course {
   id          String    @id @default(uuid())
   name        String
   description String
   price       Float
+  level       CourseLevel @default(BEGINNER)
+  category    String
+  duration    Int       // in weeks
+  thumbnail   String?
   sections    Section[]
   enrollments Enrollment[]
   progress    CourseProgress[]

@@ -1,14 +1,13 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { User, login as apiLogin, register as apiRegister, getCurrentUser, logout as apiLogout } from '@/lib/api';
+import { User, login as apiLogin, register as apiRegister, getCurrentUser, logout as apiLogout, AuthResponse } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "@/components/ui/sonner";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthResponse>;
+  register: (name: string, email: string, password: string) => Promise<AuthResponse>;
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -31,34 +30,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      const response = await apiLogin({ email, password });
-      setUser(response.user);
-      toast.success("Login successful");
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error("Login failed. Please check your credentials.");
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+  const login = async (email: string, password: string): Promise<AuthResponse> => {
+    setLoading(true);
+    const response = await apiLogin({ email, password });
+    setUser(response.user);
+    setLoading(false);
+    return response;
   };
 
-  const register = async (name: string, email: string, password: string) => {
-    try {
-      setLoading(true);
-      const response = await apiRegister({ name, email, password });
-      setUser(response.user);
-      toast.success("Registration successful");
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error("Registration failed. Please try again.");
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+  const register = async (name: string, email: string, password: string): Promise<AuthResponse> => {
+    setLoading(true);
+    const response = await apiRegister({ name, email, password });
+    setUser(response.user);
+    setLoading(false);
+    return response;
   };
 
   const logout = () => {
@@ -77,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin',
+        isAdmin: user?.role.toLowerCase() === 'admin',
       }}
     >
       {children}
