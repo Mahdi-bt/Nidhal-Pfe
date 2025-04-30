@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, PaymentStatus, EnrollmentStatus } from '@prisma/client';
 import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
@@ -20,6 +20,11 @@ export class PaymentService {
 
   async createPaymentIntent(courseId: string, userId: string) {
     try {
+      // Validate inputs
+      if (!courseId || !userId) {
+        throw new Error('Course ID and User ID are required');
+      }
+
       // Get course details
       const course = await prisma.course.findUnique({
         where: { id: courseId }
@@ -27,6 +32,19 @@ export class PaymentService {
 
       if (!course) {
         throw new Error('Course not found');
+      }
+
+      // Check if user already has an active enrollment
+      const existingEnrollment = await prisma.enrollment.findFirst({
+        where: {
+          userId,
+          courseId,
+          status: EnrollmentStatus.ACTIVE
+        }
+      });
+
+      if (existingEnrollment) {
+        throw new Error('User is already enrolled in this course');
       }
 
       // Create payment intent with Stripe
@@ -44,7 +62,7 @@ export class PaymentService {
         data: {
           id: paymentIntent.id,
           amount: course.price,
-          status: 'pending',
+          status: PaymentStatus.PENDING,
           courseId,
           userId
         }
@@ -56,12 +74,16 @@ export class PaymentService {
       };
     } catch (error) {
       console.error('Error creating payment intent:', error);
-      throw new Error('Failed to create payment intent');
+      throw new Error(error instanceof Error ? error.message : 'Failed to create payment intent');
     }
   }
 
   async confirmPayment(paymentIntentId: string) {
     try {
+      if (!paymentIntentId) {
+        throw new Error('Payment Intent ID is required');
+      }
+
       // Get payment intent from Stripe
       const stripePaymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
@@ -72,7 +94,7 @@ export class PaymentService {
       // Update payment intent status in database
       const paymentIntent = await prisma.paymentIntent.update({
         where: { id: paymentIntentId },
-        data: { status: 'completed' }
+        data: { status: PaymentStatus.COMPLETED }
       });
 
       // Create enrollment
@@ -80,19 +102,23 @@ export class PaymentService {
         data: {
           userId: paymentIntent.userId,
           courseId: paymentIntent.courseId,
-          status: 'active'
+          status: EnrollmentStatus.ACTIVE
         }
       });
 
       return paymentIntent;
     } catch (error) {
       console.error('Error confirming payment:', error);
-      throw new Error('Failed to confirm payment');
+      throw new Error(error instanceof Error ? error.message : 'Failed to confirm payment');
     }
   }
 
   async getPaymentStatus(paymentIntentId: string) {
     try {
+      if (!paymentIntentId) {
+        throw new Error('Payment Intent ID is required');
+      }
+
       const paymentIntent = await prisma.paymentIntent.findUnique({
         where: { id: paymentIntentId }
       });
@@ -104,7 +130,7 @@ export class PaymentService {
       return paymentIntent;
     } catch (error) {
       console.error('Error getting payment status:', error);
-      throw new Error('Failed to get payment status');
+      throw new Error(error instanceof Error ? error.message : 'Failed to get payment status');
     }
   }
 
@@ -142,12 +168,16 @@ export class PaymentService {
       return payments;
     } catch (error) {
       console.error('Error getting all payments:', error);
-      throw new Error('Failed to get all payments');
+      throw new Error(error instanceof Error ? error.message : 'Failed to get all payments');
     }
   }
 
   async getUserPayments(userId: string) {
     try {
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
       const payments = await prisma.paymentIntent.findMany({
         where: {
           userId
@@ -176,7 +206,7 @@ export class PaymentService {
       return payments;
     } catch (error) {
       console.error('Error getting user payments:', error);
-      throw new Error('Failed to get user payments');
+      throw new Error(error instanceof Error ? error.message : 'Failed to get user payments');
     }
   }
 } 
