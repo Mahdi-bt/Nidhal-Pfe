@@ -21,7 +21,7 @@ router.post('/', authMiddleware, adminMiddleware, upload.fields([
     
     // Add thumbnail path if provided
     if (files.thumbnail && files.thumbnail.length > 0) {
-      courseData.thumbnail = files.thumbnail[0].path.replace(/\\/g, '/');
+      courseData.thumbnail = `/uploads/${files.thumbnail[0].path.replace(/\\/g, '/')}`;
     }
     
     // Add file paths to the course data
@@ -32,7 +32,7 @@ router.post('/', authMiddleware, adminMiddleware, upload.fields([
           ...section,
           videos: section.videos.map((video: any, videoIndex: number) => ({
             ...video,
-            filePath: sectionFiles[videoIndex]?.path?.replace(/\\/g, '/'),
+            filePath: sectionFiles[videoIndex]?.path ? `/uploads/${sectionFiles[videoIndex].path.replace(/\\/g, '/')}` : null,
             duration: video.duration
           }))
         };
@@ -63,7 +63,7 @@ router.put('/:id', authMiddleware, adminMiddleware, upload.fields([
     
     // Add thumbnail path if provided
     if (files.thumbnail && files.thumbnail.length > 0) {
-      courseData.thumbnail = files.thumbnail[0].path.replace(/\\/g, '/');
+      courseData.thumbnail = `/uploads/${files.thumbnail[0].path.replace(/\\/g, '/')}`;
     }
     
     // Add file paths to the course data
@@ -74,7 +74,7 @@ router.put('/:id', authMiddleware, adminMiddleware, upload.fields([
           ...section,
           videos: section.videos.map((video: any, videoIndex: number) => ({
             ...video,
-            filePath: sectionFiles[videoIndex]?.path?.replace(/\\/g, '/'),
+            filePath: sectionFiles[videoIndex]?.path ? `/uploads/${sectionFiles[videoIndex].path.replace(/\\/g, '/')}` : null,
             duration: video.duration
           }))
         };
@@ -163,7 +163,7 @@ router.patch('/:id', authMiddleware, adminMiddleware, uploadVideo.array('videos'
               ...section,
               videos: section.videos.map((video: any, videoIndex: number) => ({
                 ...video,
-                filePath: sectionFiles[videoIndex]?.path
+                filePath: sectionFiles[videoIndex]?.path ? `/uploads/${sectionFiles[videoIndex].path.replace(/\\/g, '/')}` : null
               }))
             };
           }

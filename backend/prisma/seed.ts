@@ -77,6 +77,8 @@ async function main() {
       name: 'Web Development Bootcamp',
       description: 'Learn full-stack web development from scratch. Covers HTML, CSS, JavaScript, React, Node.js, and more.',
       price: 199.99,
+      category: 'Web Development',
+      duration: 12, // duration in weeks
       sections: [
         {
           name: 'HTML & CSS Fundamentals',
@@ -108,6 +110,8 @@ async function main() {
       name: 'Data Science Fundamentals',
       description: 'Master the basics of data science, including Python, statistics, and machine learning.',
       price: 149.99,
+      category: 'Data Science',
+      duration: 8,
       sections: [
         {
           name: 'Python for Data Science',
@@ -131,6 +135,8 @@ async function main() {
       name: 'Mobile App Development',
       description: 'Build iOS and Android apps using React Native. Learn mobile development best practices.',
       price: 179.99,
+      category: 'Mobile Development',
+      duration: 10,
       sections: [
         {
           name: 'React Native Basics',
@@ -154,6 +160,8 @@ async function main() {
       name: 'UI/UX Design Masterclass',
       description: 'Learn modern UI/UX design principles, tools, and techniques for creating beautiful interfaces.',
       price: 129.99,
+      category: 'Design',
+      duration: 6,
       sections: [
         {
           name: 'Design Fundamentals',
@@ -177,6 +185,8 @@ async function main() {
       name: 'DevOps Engineering',
       description: 'Master DevOps practices, tools, and methodologies for modern software development.',
       price: 249.99,
+      category: 'DevOps',
+      duration: 14,
       sections: [
         {
           name: 'Containerization',
