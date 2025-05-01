@@ -28,6 +28,7 @@ interface VideoFormData {
   name: string;
   file?: File;
   duration: number;
+  filePath?: string;
 }
 
 interface SectionFormData {
@@ -82,8 +83,14 @@ const initialFormData: CourseFormData = {
   ],
 };
 
+const getFileUrl = (path: string) => {
+  if (!path) return '/placeholder-image.jpg';
+  return `http://localhost:3000/${path}`;
+};
+
 const AdminCourses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -115,6 +122,7 @@ const AdminCourses = () => {
     if (course) {
       setIsEditing(true);
       setCurrentCourseId(course.id);
+      setCurrentCourse(course);
       setFormData({
         name: course.name,
         description: course.description,
@@ -122,14 +130,17 @@ const AdminCourses = () => {
         level: course.level,
         category: course.category,
         duration: course.duration,
-        thumbnail: course.thumbnail ? new File([course.thumbnail], course.name) : undefined,
+        thumbnail: undefined,
         enrolledStudents: course.enrolledStudents,
         sections: course.sections.map(section => ({
+          id: section.id,
           name: section.name,
           videos: section.videos.map(video => ({
+            id: video.id,
             name: video.name,
-            file: video.file ? new File([video.file], video.name) : undefined,
+            file: undefined,
             duration: video.duration,
+            filePath: video.filePath
           })),
         })),
       });
@@ -137,6 +148,7 @@ const AdminCourses = () => {
     } else {
       setIsEditing(false);
       setCurrentCourseId(null);
+      setCurrentCourse(null);
       setFormData(initialFormData);
       setExpandedSections([0]);
     }
@@ -148,6 +160,7 @@ const AdminCourses = () => {
     setFormData(initialFormData);
     setIsEditing(false);
     setCurrentCourseId(null);
+    setCurrentCourse(null);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -187,6 +200,7 @@ const AdminCourses = () => {
             id: video.id,
             name: video.name,
             duration: video.duration,
+            filePath: video.filePath
           })),
         })),
       };
@@ -201,7 +215,7 @@ const AdminCourses = () => {
       formData.sections.forEach((section, sectionIndex) => {
         section.videos.forEach((video, videoIndex) => {
           if (video.file instanceof File) {
-            formDataToSend.append(`videos[${sectionIndex}]`, video.file);
+            formDataToSend.append(`videos[${sectionIndex}][${videoIndex}]`, video.file);
           }
         });
       });
@@ -259,7 +273,15 @@ const AdminCourses = () => {
       ...prev,
       sections: prev.sections.map((section, index) => 
         index === sectionIndex
-          ? { ...section, videos: [...section.videos, { ...initialVideoData }] }
+          ? { 
+              ...section, 
+              videos: [...section.videos, { 
+                name: '',
+                file: undefined,
+                duration: 0,
+                filePath: undefined
+              }] 
+            }
           : section
       ),
     }));
@@ -486,17 +508,23 @@ const AdminCourses = () => {
                     file:text-sm file:font-semibold
                     file:bg-primary-50 file:text-primary-700
                     hover:file:bg-primary-100"
-                  required
+                  required={!isEditing}
                 />
-                {formData.thumbnail && (
-                  <div className="mt-2">
+                <div className="mt-2">
+                  {formData.thumbnail instanceof File ? (
                     <img
                       src={URL.createObjectURL(formData.thumbnail)}
-                      alt="Thumbnail preview"
+                      alt="New thumbnail preview"
                       className="h-32 w-32 object-cover rounded-lg"
                     />
-                  </div>
-                )}
+                  ) : isEditing && currentCourse?.thumbnail ? (
+                    <img
+                      src={getFileUrl(currentCourse.thumbnail)}
+                      alt="Current thumbnail"
+                      className="h-32 w-32 object-cover rounded-lg"
+                    />
+                  ) : null}
+                </div>
               </div>
             </div>
 
@@ -598,8 +626,48 @@ const AdminCourses = () => {
                                     file:text-sm file:font-semibold
                                     file:bg-primary-50 file:text-primary-700
                                     hover:file:bg-primary-100"
-                                  required
+                                  required={!isEditing}
                                 />
+                                {isEditing && !video.file && video.filePath && (
+                                  <div className="mt-2">
+                                    <div className="text-sm text-gray-500 flex items-center justify-between">
+                                      <span>Current video: {video.name}</span>
+                                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                        Duration: {video.duration} minutes
+                                      </span>
+                                    </div>
+                                    <video 
+                                      key={video.filePath}
+                                      src={getFileUrl(video.filePath)}
+                                      className="mt-2 w-full max-w-md rounded-lg"
+                                      controls
+                                      preload="metadata"
+                                    >
+                                      <source src={getFileUrl(video.filePath)} type="video/mp4" />
+                                      Your browser does not support the video tag.
+                                    </video>
+                                  </div>
+                                )}
+                                {video.file instanceof File && (
+                                  <div className="mt-2">
+                                    <div className="text-sm text-gray-500 flex items-center justify-between">
+                                      <span>New video: {video.file.name}</span>
+                                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                        Duration: {video.duration} minutes
+                                      </span>
+                                    </div>
+                                    <video 
+                                      key={video.file.name}
+                                      src={URL.createObjectURL(video.file)}
+                                      className="mt-2 w-full max-w-md rounded-lg"
+                                      controls
+                                      preload="metadata"
+                                    >
+                                      <source src={URL.createObjectURL(video.file)} type="video/mp4" />
+                                      Your browser does not support the video tag.
+                                    </video>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -669,9 +737,13 @@ const AdminCourses = () => {
               <div className="flex flex-col md:flex-row">
                 <div className="md:w-1/4">
                   <img 
-                    src={course.thumbnail} 
+                    src={getFileUrl(course.thumbnail)} 
                     alt={course.name} 
                     className="w-full h-48 md:h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/placeholder-image.jpg';
+                    }}
                   />
                 </div>
                 <div className="p-4 md:w-3/4 flex flex-col">
@@ -724,15 +796,7 @@ const AdminCourses = () => {
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/courses/${course.id}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        View
-                      </Link>
-                    </Button>
+                    
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -745,20 +809,7 @@ const AdminCourses = () => {
                       </svg>
                       Edit
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-red-600 border-red-600 hover:bg-red-50"
-                      onClick={() => handleDeleteCourse(course.id)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        <line x1="10" y1="11" x2="10" y2="17"/>
-                        <line x1="14" y1="11" x2="14" y2="17"/>
-                      </svg>
-                      Delete
-                    </Button>
+                    
                   </div>
                 </div>
               </div>

@@ -7,34 +7,34 @@ const router = Router();
 const courseService = CourseService.getInstance();
 
 // Create a new course (admin only)
-router.post('/', authMiddleware, adminMiddleware, upload.fields([
-  { name: 'thumbnail', maxCount: 1 },
-  { name: 'videos[0]', maxCount: 10 },
-  { name: 'videos[1]', maxCount: 10 },
-  { name: 'videos[2]', maxCount: 10 },
-  { name: 'videos[3]', maxCount: 10 },
-  { name: 'videos[4]', maxCount: 10 }
-]), async (req, res) => {
+router.post('/', authMiddleware, adminMiddleware, upload.any(), async (req, res) => {
   try {
     const courseData = JSON.parse(req.body.course);
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const files = req.files as Express.Multer.File[];
     
     // Add thumbnail path if provided
-    if (files.thumbnail && files.thumbnail.length > 0) {
-      courseData.thumbnail = `/uploads/${files.thumbnail[0].path.replace(/\\/g, '/')}`;
+    const thumbnailFile = files.find(file => file.fieldname === 'thumbnail');
+    if (thumbnailFile) {
+      const thumbnailFileName = thumbnailFile.path.split('uploads\\').pop()?.replace(/\\/g, '/');
+      courseData.thumbnail = `uploads/${thumbnailFileName}`;
     }
     
     // Add file paths to the course data
     if (courseData.sections) {
-      courseData.sections = courseData.sections.map((section: any, index: number) => {
-        const sectionFiles = files[`videos[${index}]`] || [];
+      courseData.sections = courseData.sections.map((section: any, sectionIndex: number) => {
         return {
           ...section,
-          videos: section.videos.map((video: any, videoIndex: number) => ({
-            ...video,
-            filePath: sectionFiles[videoIndex]?.path ? `/uploads/${sectionFiles[videoIndex].path.replace(/\\/g, '/')}` : null,
-            duration: video.duration
-          }))
+          videos: section.videos.map((video: any, videoIndex: number) => {
+            const videoField = `videos[${sectionIndex}][${videoIndex}]`;
+            const videoFile = files.find(file => file.fieldname === videoField);
+            if (!videoFile?.path) return { ...video, filePath: video.filePath };
+            const videoFileName = videoFile.path.split('uploads\\').pop()?.replace(/\\/g, '/');
+            return {
+              ...video,
+              filePath: `uploads/${videoFileName}`,
+              duration: video.duration
+            };
+          })
         };
       });
     }
@@ -48,35 +48,35 @@ router.post('/', authMiddleware, adminMiddleware, upload.fields([
 });
 
 // Update a course (admin only)
-router.put('/:id', authMiddleware, adminMiddleware, upload.fields([
-  { name: 'thumbnail', maxCount: 1 },
-  { name: 'videos[0]', maxCount: 10 },
-  { name: 'videos[1]', maxCount: 10 },
-  { name: 'videos[2]', maxCount: 10 },
-  { name: 'videos[3]', maxCount: 10 },
-  { name: 'videos[4]', maxCount: 10 }
-]), async (req, res) => {
+router.put('/:id', authMiddleware, adminMiddleware, upload.any(), async (req, res) => {
   try {
     const courseId = req.params.id;
     const courseData = JSON.parse(req.body.course);
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const files = req.files as Express.Multer.File[];
     
     // Add thumbnail path if provided
-    if (files.thumbnail && files.thumbnail.length > 0) {
-      courseData.thumbnail = `/uploads/${files.thumbnail[0].path.replace(/\\/g, '/')}`;
+    const thumbnailFile = files.find(file => file.fieldname === 'thumbnail');
+    if (thumbnailFile) {
+      const thumbnailFileName = thumbnailFile.path.split('uploads\\').pop()?.replace(/\\/g, '/');
+      courseData.thumbnail = `uploads/${thumbnailFileName}`;
     }
     
     // Add file paths to the course data
     if (courseData.sections) {
-      courseData.sections = courseData.sections.map((section: any, index: number) => {
-        const sectionFiles = files[`videos[${index}]`] || [];
+      courseData.sections = courseData.sections.map((section: any, sectionIndex: number) => {
         return {
           ...section,
-          videos: section.videos.map((video: any, videoIndex: number) => ({
-            ...video,
-            filePath: sectionFiles[videoIndex]?.path ? `/uploads/${sectionFiles[videoIndex].path.replace(/\\/g, '/')}` : null,
-            duration: video.duration
-          }))
+          videos: section.videos.map((video: any, videoIndex: number) => {
+            const videoField = `videos[${sectionIndex}][${videoIndex}]`;
+            const videoFile = files.find(file => file.fieldname === videoField);
+            if (!videoFile?.path) return { ...video, filePath: video.filePath };
+            const videoFileName = videoFile.path.split('uploads\\').pop()?.replace(/\\/g, '/');
+            return {
+              ...video,
+              filePath: `uploads/${videoFileName}`,
+              duration: video.duration
+            };
+          })
         };
       });
     }
@@ -161,10 +161,14 @@ router.patch('/:id', authMiddleware, adminMiddleware, uploadVideo.array('videos'
             const sectionFiles = files.filter(file => file.fieldname === `videos[${index}]`);
             return {
               ...section,
-              videos: section.videos.map((video: any, videoIndex: number) => ({
-                ...video,
-                filePath: sectionFiles[videoIndex]?.path ? `/uploads/${sectionFiles[videoIndex].path.replace(/\\/g, '/')}` : null
-              }))
+              videos: section.videos.map((video: any, videoIndex: number) => {
+                if (!sectionFiles[videoIndex]?.path) return { ...video, filePath: null };
+                const videoFileName = sectionFiles[videoIndex].path.split('uploads\\').pop()?.replace(/\\/g, '/');
+                return {
+                  ...video,
+                  filePath: `uploads/${videoFileName}`
+                };
+              })
             };
           }
           return section;

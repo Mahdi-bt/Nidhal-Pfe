@@ -9,6 +9,7 @@ export interface User {
   name: string;
   email: string;
   role: 'admin' | 'student' | 'instructor';
+  status: 'ACTIVE' | 'BLOCKED';
   createdAt: string;
 }
 
@@ -27,7 +28,7 @@ export interface Course {
 }
 
 export interface Section {
-  id: string;
+  id?: string;
   name: string;
   videos: Video[];
 }
@@ -35,8 +36,8 @@ export interface Section {
 export interface Video {
   id?: string;
   name: string;
-  url?: string;
   duration: number;
+  filePath?: string;
   file?: File;
 }
 
@@ -89,6 +90,7 @@ const mockUsers: User[] = [
     name: 'Admin User',
     email: 'admin@example.com',
     role: 'admin',
+    status: 'ACTIVE',
     createdAt: '2023-01-01',
   },
   {
@@ -96,6 +98,7 @@ const mockUsers: User[] = [
     name: 'John Doe',
     email: 'john@example.com',
     role: 'student',
+    status: 'ACTIVE',
     createdAt: '2023-01-05',
   },
   {
@@ -103,6 +106,7 @@ const mockUsers: User[] = [
     name: 'Jane Smith',
     email: 'jane@example.com',
     role: 'student',
+    status: 'ACTIVE',
     createdAt: '2023-01-10',
   },
 ];
@@ -127,13 +131,13 @@ const mockCourses: Course[] = [
             id: 'v1',
             name: 'Welcome to the Course',
             duration: 350,
-            url: 'https://example.com/video1.mp4',
+            filePath: 'https://example.com/video1.mp4',
           },
           {
             id: 'v2',
             name: 'Setting Up Your Development Environment',
             duration: 610,
-            url: 'https://example.com/video2.mp4',
+            filePath: 'https://example.com/video2.mp4',
           },
         ],
       },
@@ -145,13 +149,13 @@ const mockCourses: Course[] = [
             id: 'v3',
             name: 'HTML Basics',
             duration: 720,
-            url: 'https://example.com/video3.mp4',
+            filePath: 'https://example.com/video3.mp4',
           },
           {
             id: 'v4',
             name: 'HTML Forms and Input Elements',
             duration: 840,
-            url: 'https://example.com/video4.mp4',
+            filePath: 'https://example.com/video4.mp4',
           },
         ],
       },
@@ -177,13 +181,13 @@ const mockCourses: Course[] = [
             id: 'v5',
             name: 'Python Basics',
             duration: 580,
-            url: 'https://example.com/video5.mp4',
+            filePath: 'https://example.com/video5.mp4',
           },
           {
             id: 'v6',
             name: 'Data Manipulation with Pandas',
             duration: 720,
-            url: 'https://example.com/video6.mp4',
+            filePath: 'https://example.com/video6.mp4',
           },
         ],
       },
@@ -209,7 +213,7 @@ const mockCourses: Course[] = [
             id: 'v7',
             name: 'React Native Basics',
             duration: 650,
-            url: 'https://example.com/video7.mp4',
+            filePath: 'https://example.com/video7.mp4',
           },
         ],
       },
@@ -680,3 +684,20 @@ export async function downloadInvoice(paymentIntentId: string): Promise<Blob> {
     throw error;
   }
 }
+
+export const updateUserStatus = async (userId: string, status: 'ACTIVE' | 'BLOCKED'): Promise<User> => {
+  const response = await fetch(`${BASE_URL}/users/${userId}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    body: JSON.stringify({ status })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update user status');
+  }
+
+  return response.json();
+};
