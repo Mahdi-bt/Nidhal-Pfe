@@ -1,4 +1,4 @@
-import { PrismaClient, Role, EnrollmentStatus, User, Course } from '@prisma/client';
+import { PrismaClient, Role, EnrollmentStatus, User, Course, PaymentStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -301,6 +301,131 @@ async function main() {
       console.log(`Enrollment created for user ${enrollmentData.userId} in course ${enrollmentData.courseId}`);
     } else {
       console.log(`Enrollment already exists for user ${enrollmentData.userId} in course ${enrollmentData.courseId}`);
+    }
+  }
+
+  // Create payment intents (invoices)
+  const paymentIntents = [
+    // John Doe's payments
+    {
+      id: 'pi_1',
+      amount: 199.99,
+      status: PaymentStatus.COMPLETED,
+      userId: createdUsers[0].id, // John Doe
+      courseId: createdCourses[0].id, // Web Development Bootcamp
+      enrollmentId: (await prisma.enrollment.findFirst({
+        where: {
+          userId: createdUsers[0].id,
+          courseId: createdCourses[0].id,
+        },
+      }))?.id,
+      createdAt: new Date('2024-01-15'),
+    },
+    {
+      id: 'pi_2',
+      amount: 149.99,
+      status: PaymentStatus.COMPLETED,
+      userId: createdUsers[0].id, // John Doe
+      courseId: createdCourses[1].id, // Data Science Fundamentals
+      enrollmentId: (await prisma.enrollment.findFirst({
+        where: {
+          userId: createdUsers[0].id,
+          courseId: createdCourses[1].id,
+        },
+      }))?.id,
+      createdAt: new Date('2024-02-01'),
+    },
+    // Jane Smith's payments
+    {
+      id: 'pi_3',
+      amount: 179.99,
+      status: PaymentStatus.COMPLETED,
+      userId: createdUsers[1].id, // Jane Smith
+      courseId: createdCourses[2].id, // Mobile App Development
+      enrollmentId: (await prisma.enrollment.findFirst({
+        where: {
+          userId: createdUsers[1].id,
+          courseId: createdCourses[2].id,
+        },
+      }))?.id,
+      createdAt: new Date('2024-01-20'),
+    },
+    {
+      id: 'pi_4',
+      amount: 129.99,
+      status: PaymentStatus.FAILED,
+      userId: createdUsers[1].id, // Jane Smith
+      courseId: createdCourses[3].id, // UI/UX Design Masterclass
+      enrollmentId: (await prisma.enrollment.findFirst({
+        where: {
+          userId: createdUsers[1].id,
+          courseId: createdCourses[3].id,
+        },
+      }))?.id,
+      createdAt: new Date('2024-02-10'),
+    },
+    // Bob Wilson's payments
+    {
+      id: 'pi_5',
+      amount: 249.99,
+      status: PaymentStatus.COMPLETED,
+      userId: createdUsers[2].id, // Bob Wilson
+      courseId: createdCourses[4].id, // DevOps Engineering
+      enrollmentId: (await prisma.enrollment.findFirst({
+        where: {
+          userId: createdUsers[2].id,
+          courseId: createdCourses[4].id,
+        },
+      }))?.id,
+      createdAt: new Date('2024-01-25'),
+    },
+    {
+      id: 'pi_6',
+      amount: 199.99,
+      status: PaymentStatus.PENDING,
+      userId: createdUsers[2].id, // Bob Wilson
+      courseId: createdCourses[0].id, // Web Development Bootcamp
+      enrollmentId: (await prisma.enrollment.findFirst({
+        where: {
+          userId: createdUsers[2].id,
+          courseId: createdCourses[0].id,
+        },
+      }))?.id,
+      createdAt: new Date('2024-02-15'),
+    },
+    // Additional payments for variety
+    {
+      id: 'pi_7',
+      amount: 179.99,
+      status: PaymentStatus.CANCELLED,
+      userId: createdUsers[0].id, // John Doe
+      courseId: createdCourses[2].id, // Mobile App Development
+      enrollmentId: null,
+      createdAt: new Date('2024-02-05'),
+    },
+    {
+      id: 'pi_8',
+      amount: 249.99,
+      status: PaymentStatus.FAILED,
+      userId: createdUsers[1].id, // Jane Smith
+      courseId: createdCourses[4].id, // DevOps Engineering
+      enrollmentId: null,
+      createdAt: new Date('2024-02-12'),
+    }
+  ];
+
+  for (const paymentData of paymentIntents) {
+    const existingPayment = await prisma.paymentIntent.findUnique({
+      where: { id: paymentData.id },
+    });
+
+    if (!existingPayment) {
+      await prisma.paymentIntent.create({
+        data: paymentData,
+      });
+      console.log(`Payment intent ${paymentData.id} created successfully`);
+    } else {
+      console.log(`Payment intent ${paymentData.id} already exists`);
     }
   }
 }

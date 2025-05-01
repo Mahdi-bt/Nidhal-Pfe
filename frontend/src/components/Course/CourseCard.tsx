@@ -5,13 +5,16 @@ import { Course } from '@/lib/api';
 interface CourseCardProps {
   course: Course;
 }
-
+const getFileUrl = (path: string) => {
+  if (!path) return '/placeholder-image.jpg';
+  return `http://localhost:3000/${path}`;
+};
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
   return (
     <div className="card h-full flex flex-col">
       <div className="relative">
         <img 
-          src={course.thumbnail} 
+          src={getFileUrl(course.thumbnail)} 
           alt={course.name} 
           className="w-full h-48 object-cover rounded-t-lg"
         />

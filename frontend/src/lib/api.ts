@@ -55,8 +55,19 @@ export interface Payment {
   userId: string;
   courseId: string;
   amount: number;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'completed' | 'failed' | 'pending';
   createdAt: string;
+}
+
+export interface PaymentStats {
+  completed: number;
+  pending: number;
+  failed: number;
+}
+
+export interface MonthlyRevenue {
+  month: string;
+  revenue: number;
 }
 
 export interface Progress {
@@ -700,4 +711,67 @@ export const updateUserStatus = async (userId: string, status: 'ACTIVE' | 'BLOCK
   }
 
   return response.json();
+};
+
+export const getAllPayments = async (): Promise<Payment[]> => {
+  try {
+    const response = await fetch(`${BASE_URL}/payments`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch payments');
+    }
+    
+    return response.json();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch payments';
+    toast.error(message);
+    throw error;
+  }
+};
+
+export const getSuccessfulPaymentsStats = async (): Promise<PaymentStats> => {
+  try {
+    const response = await fetch(`${BASE_URL}/payments/statistics/successful`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch payment statistics');
+    }
+    
+    return response.json();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch payment statistics';
+    toast.error(message);
+    throw error;
+  }
+};
+
+export const getMonthlyRevenueStats = async (): Promise<MonthlyRevenue[]> => {
+  try {
+    const response = await fetch(`${BASE_URL}/payments/statistics/monthly-revenue`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch monthly revenue statistics');
+    }
+    
+    return response.json();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch monthly revenue statistics';
+    toast.error(message);
+    throw error;
+  }
 };

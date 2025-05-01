@@ -209,4 +209,54 @@ export class PaymentService {
       throw new Error(error instanceof Error ? error.message : 'Failed to get user payments');
     }
   }
+
+  async getSuccessfulPaymentsStats() {
+    try {
+      const stats = await prisma.paymentIntent.groupBy({
+        by: ['status'],
+        _count: {
+          id: true
+        }
+      });
+
+      return stats.reduce((acc, curr) => {
+        acc[curr.status.toLowerCase()] = curr._count.id;
+        return acc;
+      }, {} as Record<string, number>);
+    } catch (error) {
+      console.error('Error getting successful payments stats:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to get successful payments stats');
+    }
+  }
+
+  async getMonthlyRevenueStats() {
+    try {
+      const payments = await prisma.paymentIntent.findMany({
+        where: {
+          status: 'COMPLETED'
+        },
+        select: {
+          amount: true,
+          createdAt: true
+        },
+        orderBy: {
+          createdAt: 'asc'
+        }
+      });
+
+      const monthlyRevenue = payments.reduce((acc, payment) => {
+        const month = new Date(payment.createdAt).toLocaleString('default', { month: 'short' });
+        acc[month] = (acc[month] || 0) + payment.amount;
+        return acc;
+      }, {} as Record<string, number>);
+
+      return Object.entries(monthlyRevenue).map(([month, revenue]) => ({
+        month,
+        revenue
+      }));
+    } catch (error) {
+      console.error('Error getting monthly revenue stats:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to get monthly revenue stats');
+    }
+  }
 } 

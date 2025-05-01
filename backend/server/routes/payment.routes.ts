@@ -91,4 +91,24 @@ router.get('/invoice/:paymentIntentId', authMiddleware, async (req, res) => {
   }
 });
 
+// Get successful payments statistics (admin only)
+router.get('/statistics/successful', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const statistics = await paymentService.getSuccessfulPaymentsStats();
+    res.json(statistics);
+  } catch (error: any) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Get monthly revenue statistics (admin only)
+router.get('/statistics/monthly-revenue', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const statistics = await paymentService.getMonthlyRevenueStats();
+    res.json(statistics);
+  } catch (error: any) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 export default router; 
