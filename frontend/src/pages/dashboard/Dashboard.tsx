@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
@@ -22,7 +21,6 @@ const Dashboard = () => {
     const fetchEnrolledCourses = async () => {
       try {
         if (!user) return;
-        
         const data = await getEnrolledCourses(user.id);
         setEnrolledCourses(data);
       } catch (error) {
@@ -31,14 +29,28 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
-    
     fetchEnrolledCourses();
   }, [user, isAuthenticated, navigate]);
 
-  // Calculate statistics
-  const inProgressCourses = enrolledCourses.filter(c => c.progress > 0 && c.progress < 100);
-  const completedCourses = enrolledCourses.filter(c => c.progress === 100);
-  const notStartedCourses = enrolledCourses.filter(c => c.progress === 0);
+  // For statistics
+  const statsCourses = enrolledCourses.map((c) => ({
+    id: c.id,
+    name: c.name,
+    progress: typeof c.progress === 'number' ? c.progress : (c.progress?.overall ?? 0)
+  }));
+
+  // For in-progress display (full objects)
+  const inProgressCourses = enrolledCourses.filter((c) => {
+    const progress = typeof c.progress === 'number' ? c.progress : (c.progress?.overall ?? 0);
+    return progress > 0 && progress < 1;
+  });
+
+  // Derive statistics from enrolledCourses
+  const completedCourses = statsCourses.filter(c => c.progress >= 1);
+  const notStartedCourses = statsCourses.filter(c => c.progress === 0);
+  const avgProgress = statsCourses.length
+    ? statsCourses.reduce((sum, c) => sum + (c.progress || 0), 0) / statsCourses.length
+    : 0;
 
   return (
     <MainLayout>
@@ -50,6 +62,20 @@ const Dashboard = () => {
           <p className="text-gray-600">
             Continue your learning journey right where you left off.
           </p>
+        </div>
+
+        {/* Average Progress Bar */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold">Average Course Progress</h2>
+            <span className="text-primary font-bold">{Math.round(avgProgress * 100)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div
+              className="bg-primary h-3 rounded-full transition-all duration-300"
+              style={{ width: `${avgProgress * 100}%` }}
+            ></div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -110,13 +136,7 @@ const Dashboard = () => {
                 </svg>
               </div>
             </div>
-            <Link to="/certificates" className="mt-auto text-sm text-white/80 hover:text-white flex items-center">
-              View certificates
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
-                <path d="M5 12h14"/>
-                <path d="m12 5 7 7-7 7"/>
-              </svg>
-            </Link>
+            
           </div>
         </div>
         
@@ -159,56 +179,7 @@ const Dashboard = () => {
           )}
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b">
-              <h2 className="font-bold">Your Achievements</h2>
-            </div>
-            <div className="p-6">
-              {completedCourses.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="flex items-start">
-                    <div className="bg-yellow-100 p-3 rounded-full text-yellow-600 mr-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="8" r="7"/>
-                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-bold">First Course Completed</h3>
-                      <p className="text-sm text-gray-600">Completed your first course</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="8" r="7"/>
-                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-                  </svg>
-                  <p className="text-gray-500">Complete courses to earn achievements</p>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b">
-              <h2 className="font-bold">Upcoming Sessions</h2>
-            </div>
-            <div className="p-6">
-              <div className="text-center py-8">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <p className="text-gray-500">No upcoming sessions scheduled.</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </MainLayout>
   );

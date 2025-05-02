@@ -1,45 +1,92 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
 import CourseProgress from '@/components/Course/CourseProgress';
 import { useAuth } from '@/contexts/AuthContext';
-import { getEnrolledCourses } from '@/lib/api';
+import { getEnrolledCourses, Course } from '@/lib/api';
+import { toast } from '@/components/ui/sonner';
+
+type CourseWithProgress = Course & {
+  progress: {
+    overall: number;
+    completed: boolean;
+    sections: Array<{
+      id: string;
+      name: string;
+      progress: number;
+      videoProgress: Array<{
+        id: string;
+        videoId: string;
+        watched: boolean;
+        progress: number;
+        lastPosition: number;
+      }>;
+    }>;
+  };
+};
 
 const MyCourses = () => {
   const { user, isAuthenticated } = useAuth();
-  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<CourseWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('all'); // 'all', 'in-progress', 'completed', 'not-started'
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
       try {
-        if (!user) return;
+        console.log('Starting fetchEnrolledCourses...');
+        console.log('Auth state:', { isAuthenticated, userId: user?.id });
         
+        if (!isAuthenticated || !user) {
+          console.log('User not authenticated, skipping fetch');
+          setLoading(false);
+          return;
+        }
+
+        console.log('Fetching enrolled courses for user:', user.id);
         const data = await getEnrolledCourses(user.id);
+        console.log('Received data:', data);
+
+        if (!data) {
+          console.error('No data received from API');
+          setError('No data received from server');
+          return;
+        }
+
+        if (!Array.isArray(data)) {
+          console.error('Invalid data format received:', data);
+          setError('Invalid data format received from server');
+          return;
+        }
+
         setEnrolledCourses(data);
+        setError(null);
       } catch (error) {
-        console.error('Error fetching enrolled courses:', error);
+        console.error('Error in fetchEnrolledCourses:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load courses');
+        toast.error('Failed to load your courses. Please try again.');
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchEnrolledCourses();
-  }, [user]);
+  }, [user, isAuthenticated]);
 
   // Filter courses based on progress
   const filteredCourses = enrolledCourses.filter(course => {
-    const matchesSearch = course.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          course.description.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!course) return false;
+    
+    const matchesSearch = course.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         course.description?.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesFilter = 
       filter === 'all' || 
-      (filter === 'in-progress' && course.progress > 0 && course.progress < 100) ||
-      (filter === 'completed' && course.progress === 100) ||
-      (filter === 'not-started' && course.progress === 0);
+      (filter === 'in-progress' && course.progress?.overall > 0 && course.progress?.overall < 100) ||
+      (filter === 'completed' && course.progress?.overall === 100) ||
+      (filter === 'not-started' && course.progress?.overall === 0);
     
     return matchesSearch && matchesFilter;
   });
@@ -53,6 +100,23 @@ const MyCourses = () => {
           <Link to="/login" className="btn-primary">
             Login Now
           </Link>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <h1 className="text-2xl font-bold mb-4 text-red-600">Error Loading Courses</h1>
+          <p className="mb-8">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn-primary"
+          >
+            Try Again
+          </button>
         </div>
       </MainLayout>
     );

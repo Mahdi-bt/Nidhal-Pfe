@@ -1,4 +1,4 @@
-import { PrismaClient, Role, EnrollmentStatus, User, Course, PaymentStatus } from '@prisma/client';
+import { PrismaClient, Role, EnrollmentStatus, User, Course, PaymentStatus, CourseLevel } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -77,31 +77,32 @@ async function main() {
       name: 'Web Development Bootcamp',
       description: 'Learn full-stack web development from scratch. Covers HTML, CSS, JavaScript, React, Node.js, and more.',
       price: 199.99,
+      level: CourseLevel.BEGINNER,
       category: 'Web Development',
-      duration: 12, // duration in weeks
+      duration: 12,
       sections: [
         {
           name: 'HTML & CSS Fundamentals',
           videos: [
-            { name: 'Introduction to HTML', filePath: '/videos/html-intro.mp4' },
-            { name: 'HTML Structure and Elements', filePath: '/videos/html-structure.mp4' },
-            { name: 'CSS Basics and Styling', filePath: '/videos/css-basics.mp4' },
+            { name: 'Introduction to HTML', filePath: '/videos/html-intro.mp4', duration: 30 },
+            { name: 'HTML Structure and Elements', filePath: '/videos/html-structure.mp4', duration: 45 },
+            { name: 'CSS Basics and Styling', filePath: '/videos/css-basics.mp4', duration: 60 },
           ]
         },
         {
           name: 'JavaScript Essentials',
           videos: [
-            { name: 'JavaScript Fundamentals', filePath: '/videos/js-fundamentals.mp4' },
-            { name: 'DOM Manipulation', filePath: '/videos/dom-manipulation.mp4' },
-            { name: 'Async JavaScript', filePath: '/videos/async-js.mp4' },
+            { name: 'JavaScript Fundamentals', filePath: '/videos/js-fundamentals.mp4', duration: 45 },
+            { name: 'DOM Manipulation', filePath: '/videos/dom-manipulation.mp4', duration: 60 },
+            { name: 'Async JavaScript', filePath: '/videos/async-js.mp4', duration: 75 },
           ]
         },
         {
           name: 'React Development',
           videos: [
-            { name: 'React Components', filePath: '/videos/react-components.mp4' },
-            { name: 'State and Props', filePath: '/videos/react-state-props.mp4' },
-            { name: 'React Hooks', filePath: '/videos/react-hooks.mp4' },
+            { name: 'React Components', filePath: '/videos/react-components.mp4', duration: 60 },
+            { name: 'State and Props', filePath: '/videos/react-state-props.mp4', duration: 75 },
+            { name: 'React Hooks', filePath: '/videos/react-hooks.mp4', duration: 90 },
           ]
         }
       ]
@@ -110,23 +111,24 @@ async function main() {
       name: 'Data Science Fundamentals',
       description: 'Master the basics of data science, including Python, statistics, and machine learning.',
       price: 149.99,
+      level: CourseLevel.INTERMEDIATE,
       category: 'Data Science',
       duration: 8,
       sections: [
         {
           name: 'Python for Data Science',
           videos: [
-            { name: 'Python Basics', filePath: '/videos/python-basics.mp4' },
-            { name: 'NumPy and Pandas', filePath: '/videos/numpy-pandas.mp4' },
-            { name: 'Data Manipulation', filePath: '/videos/data-manipulation.mp4' },
+            { name: 'Python Basics', filePath: '/videos/python-basics.mp4', duration: 45 },
+            { name: 'NumPy and Pandas', filePath: '/videos/numpy-pandas.mp4', duration: 60 },
+            { name: 'Data Manipulation', filePath: '/videos/data-manipulation.mp4', duration: 75 },
           ]
         },
         {
           name: 'Statistics and Probability',
           videos: [
-            { name: 'Basic Statistics', filePath: '/videos/basic-stats.mp4' },
-            { name: 'Probability Theory', filePath: '/videos/probability.mp4' },
-            { name: 'Statistical Inference', filePath: '/videos/statistical-inference.mp4' },
+            { name: 'Basic Statistics', filePath: '/videos/basic-stats.mp4', duration: 60 },
+            { name: 'Probability Theory', filePath: '/videos/probability.mp4', duration: 75 },
+            { name: 'Statistical Inference', filePath: '/videos/statistical-inference.mp4', duration: 90 },
           ]
         }
       ]
@@ -135,23 +137,24 @@ async function main() {
       name: 'Mobile App Development',
       description: 'Build iOS and Android apps using React Native. Learn mobile development best practices.',
       price: 179.99,
+      level: CourseLevel.INTERMEDIATE,
       category: 'Mobile Development',
       duration: 10,
       sections: [
         {
           name: 'React Native Basics',
           videos: [
-            { name: 'Setting Up React Native', filePath: '/videos/rn-setup.mp4' },
-            { name: 'Components and Navigation', filePath: '/videos/rn-components.mp4' },
-            { name: 'State Management', filePath: '/videos/rn-state.mp4' },
+            { name: 'Setting Up React Native', filePath: '/videos/rn-setup.mp4', duration: 45 },
+            { name: 'Components and Navigation', filePath: '/videos/rn-components.mp4', duration: 60 },
+            { name: 'State Management', filePath: '/videos/rn-state.mp4', duration: 75 },
           ]
         },
         {
           name: 'Advanced Mobile Features',
           videos: [
-            { name: 'Native Modules', filePath: '/videos/native-modules.mp4' },
-            { name: 'Performance Optimization', filePath: '/videos/rn-performance.mp4' },
-            { name: 'App Deployment', filePath: '/videos/app-deployment.mp4' },
+            { name: 'Native Modules', filePath: '/videos/native-modules.mp4', duration: 90 },
+            { name: 'Performance Optimization', filePath: '/videos/rn-performance.mp4', duration: 75 },
+            { name: 'App Deployment', filePath: '/videos/app-deployment.mp4', duration: 60 },
           ]
         }
       ]
@@ -160,23 +163,24 @@ async function main() {
       name: 'UI/UX Design Masterclass',
       description: 'Learn modern UI/UX design principles, tools, and techniques for creating beautiful interfaces.',
       price: 129.99,
+      level: CourseLevel.BEGINNER,
       category: 'Design',
       duration: 6,
       sections: [
         {
           name: 'Design Fundamentals',
           videos: [
-            { name: 'Color Theory', filePath: '/videos/color-theory.mp4' },
-            { name: 'Typography', filePath: '/videos/typography.mp4' },
-            { name: 'Layout Principles', filePath: '/videos/layout.mp4' },
+            { name: 'Color Theory', filePath: '/videos/color-theory.mp4', duration: 45 },
+            { name: 'Typography', filePath: '/videos/typography.mp4', duration: 60 },
+            { name: 'Layout Principles', filePath: '/videos/layout.mp4', duration: 75 },
           ]
         },
         {
           name: 'User Experience',
           videos: [
-            { name: 'User Research', filePath: '/videos/user-research.mp4' },
-            { name: 'Wireframing', filePath: '/videos/wireframing.mp4' },
-            { name: 'Prototyping', filePath: '/videos/prototyping.mp4' },
+            { name: 'User Research', filePath: '/videos/user-research.mp4', duration: 60 },
+            { name: 'Wireframing', filePath: '/videos/wireframing.mp4', duration: 45 },
+            { name: 'Prototyping', filePath: '/videos/prototyping.mp4', duration: 90 },
           ]
         }
       ]
@@ -185,23 +189,24 @@ async function main() {
       name: 'DevOps Engineering',
       description: 'Master DevOps practices, tools, and methodologies for modern software development.',
       price: 249.99,
+      level: CourseLevel.ADVANCED,
       category: 'DevOps',
       duration: 14,
       sections: [
         {
           name: 'Containerization',
           videos: [
-            { name: 'Docker Basics', filePath: '/videos/docker-basics.mp4' },
-            { name: 'Docker Compose', filePath: '/videos/docker-compose.mp4' },
-            { name: 'Container Orchestration', filePath: '/videos/container-orchestration.mp4' },
+            { name: 'Docker Basics', filePath: '/videos/docker-basics.mp4', duration: 60 },
+            { name: 'Docker Compose', filePath: '/videos/docker-compose.mp4', duration: 75 },
+            { name: 'Container Orchestration', filePath: '/videos/container-orchestration.mp4', duration: 90 },
           ]
         },
         {
           name: 'CI/CD Pipeline',
           videos: [
-            { name: 'GitHub Actions', filePath: '/videos/github-actions.mp4' },
-            { name: 'Jenkins Pipeline', filePath: '/videos/jenkins.mp4' },
-            { name: 'Deployment Strategies', filePath: '/videos/deployment-strategies.mp4' },
+            { name: 'GitHub Actions', filePath: '/videos/github-actions.mp4', duration: 75 },
+            { name: 'Jenkins Pipeline', filePath: '/videos/jenkins.mp4', duration: 90 },
+            { name: 'Deployment Strategies', filePath: '/videos/deployment-strategies.mp4', duration: 60 },
           ]
         }
       ]

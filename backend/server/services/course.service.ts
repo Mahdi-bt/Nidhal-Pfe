@@ -1,4 +1,4 @@
-import { PrismaClient, type Course, type Section, type Video, type Prisma } from '@prisma/client';
+import { PrismaClient, type Course, type Section, type Video, type Prisma, type Enrollment } from '@prisma/client';
 
 interface VideoData {
   name: string;
@@ -60,6 +60,29 @@ type CourseCreateInput = Omit<Prisma.CourseCreateInput, 'level'> & {
 type CourseUpdateInput = Omit<Prisma.CourseUpdateInput, 'level'> & {
   level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 };
+
+interface CourseProgress {
+  overall: number;
+  completed: boolean;
+  sections: {
+    id: string;
+    name: string;
+    progress: number;
+    videoProgress: {
+      id: string;
+      videoId: string;
+      progress: number;
+      lastPosition: number;
+      watched: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+      name: string;
+      duration: number;
+      filePath: string | null;
+      sectionId: string;
+    }[];
+  }[];
+}
 
 export class CourseService {
   private static instance: CourseService;
@@ -329,84 +352,116 @@ export class CourseService {
   }
 
   async getEnrolledCourses(userId: string) {
-    // Get all active enrollments for the user
-    const enrollments = await this.prisma.enrollment.findMany({
-      where: {
-        userId,
-        status: 'ACTIVE'
-      },
-      include: {
-        course: {
-          include: {
-            sections: {
-              include: {
-                videos: true
+    try {
+      console.log('Fetching enrolled courses for user:', userId);
+      
+      // Get all active enrollments for the user
+      const enrollments = await this.prisma.enrollment.findMany({
+        where: {
+          userId,
+          status: 'ACTIVE'
+        },
+        include: {
+          course: {
+            include: {
+              sections: {
+                include: {
+                  videos: true
+                }
               }
             }
           }
+        },
+        orderBy: {
+          enrolledAt: 'desc'
         }
+      });
+
+      console.log('Raw enrollments data:', JSON.stringify(enrollments, null, 2));
+      console.log('Found enrollments:', enrollments.length);
+
+      if (enrollments.length === 0) {
+        return [];
       }
-    });
 
-    // Get progress for each course
-    const coursesWithProgress = await Promise.all(
-      enrollments.map(async (enrollment) => {
-        const courseProgress = await this.prisma.courseProgress.findUnique({
-          where: {
-            userId_courseId: {
-              userId,
-              courseId: enrollment.courseId
+      // Get progress for each course
+      const coursesWithProgress = await Promise.all(
+        enrollments.map(async (enrollment) => {
+          console.log('Processing enrollment:', enrollment.id, 'for course:', enrollment.courseId);
+          
+          if (!enrollment.course) {
+            console.error('Course not found for enrollment:', enrollment.id);
+            return null;
+          }
+
+          const courseProgress = await this.prisma.courseProgress.findUnique({
+            where: {
+              userId_courseId: {
+                userId,
+                courseId: enrollment.courseId
+              }
+            },
+            include: {
+              videoProgress: true
             }
-          },
-          include: {
-            videoProgress: true
-          }
-        });
+          });
 
-        // Calculate progress for each section
-        const sectionsWithProgress = enrollment.course.sections.map((section) => {
-          const sectionVideos = section.videos;
-          const videoProgress = courseProgress?.videoProgress.filter(
-            (vp) => sectionVideos.some(v => v.id === vp.videoId)
-          ) || [];
+          console.log('Course progress for enrollment:', enrollment.id, courseProgress);
 
-          const watchedVideos = videoProgress.filter((vp) => vp.watched).length;
-          const sectionProgress = sectionVideos.length > 0 
-            ? (watchedVideos / sectionVideos.length) 
-            : 0;
+          // Calculate progress for each section
+          const sectionsWithProgress = enrollment.course.sections.map((section) => {
+            const sectionVideos = section.videos;
+            const videoProgress = courseProgress?.videoProgress.filter(
+              (vp) => sectionVideos.some((v) => v.id === vp.videoId)
+            ) || [];
 
-          return {
-            ...section,
-            progress: sectionProgress,
-            videoProgress: videoProgress
+            const watchedVideos = videoProgress.filter((vp) => vp.watched).length;
+            const sectionProgress = sectionVideos.length > 0 
+              ? (watchedVideos / sectionVideos.length) 
+              : 0;
+
+            return {
+              ...section,
+              progress: sectionProgress,
+              videoProgress: videoProgress
+            };
+          });
+
+          // Calculate overall course progress
+          const totalVideos = enrollment.course.sections.reduce(
+            (sum, section) => sum + section.videos.length, 
+            0
+          );
+          const watchedVideos = courseProgress?.videoProgress.filter((vp) => vp.watched).length || 0;
+          const overallProgress = totalVideos > 0 ? (watchedVideos / totalVideos) : 0;
+
+          const courseWithProgress = {
+            ...enrollment.course,
+            enrollment: {
+              id: enrollment.id,
+              status: enrollment.status,
+              enrolledAt: enrollment.enrolledAt
+            },
+            progress: {
+              overall: overallProgress,
+              completed: courseProgress?.completed || false,
+              sections: sectionsWithProgress
+            }
           };
-        });
 
-        // Calculate overall course progress
-        const totalVideos = enrollment.course.sections.reduce(
-          (sum, section) => sum + section.videos.length, 
-          0
-        );
-        const watchedVideos = courseProgress?.videoProgress.filter((vp) => vp.watched).length || 0;
-        const overallProgress = totalVideos > 0 ? (watchedVideos / totalVideos) : 0;
+          console.log('Processed course with progress:', courseWithProgress.id);
+          return courseWithProgress;
+        })
+      );
 
-        return {
-          ...enrollment.course,
-          enrollment: {
-            id: enrollment.id,
-            status: enrollment.status,
-            enrolledAt: enrollment.enrolledAt
-          },
-          progress: {
-            overall: overallProgress,
-            completed: courseProgress?.completed || false,
-            sections: sectionsWithProgress
-          }
-        };
-      })
-    );
-
-    return coursesWithProgress;
+      // Filter out any null values and return the courses
+      const validCourses = coursesWithProgress.filter((course): course is NonNullable<typeof course> => course !== null);
+      console.log('Final courses count:', validCourses.length);
+      return validCourses;
+    } catch (error) {
+      console.error('Error in getEnrolledCourses:', error);
+      throw new Error('Failed to fetch enrolled courses');
+    }
   }
 
   async getEnrolledCourse(userId: string, courseId: string) {
@@ -490,83 +545,207 @@ export class CourseService {
     };
   }
 
-  async getCourseProgress(userId: string, courseId: string) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-      include: {
-        sections: {
-          include: {
-            videos: true
-          }
-        }
-      }
-    });
-
+  async getCourseProgress(userId: string, courseId: string): Promise<CourseProgress> {
+    const course = await this.getCourseById(courseId);
     if (!course) {
       throw new Error('Course not found');
     }
 
-    const courseProgress = await this.prisma.courseProgress.findUnique({
+    const videoProgress = await this.prisma.videoProgress.findMany({
+      where: {
+        userId,
+        courseId
+      }
+    });
+
+    const sections = course.sections.map(section => {
+      const sectionVideos = section.videos.map(video => {
+        const progress = videoProgress.find(vp => vp.videoId === video.id);
+        return {
+          id: video.id,
+          videoId: video.id,
+          name: video.name,
+          duration: video.duration,
+          filePath: video.filePath,
+          sectionId: video.sectionId,
+          progress: progress?.progress || 0,
+          lastPosition: progress?.lastPosition || 0,
+          watched: progress?.watched || false,
+          createdAt: video.createdAt,
+          updatedAt: video.updatedAt
+        };
+      });
+
+      const sectionProgress = sectionVideos.reduce((sum, video) => sum + video.progress, 0) / sectionVideos.length;
+
+      return {
+        id: section.id,
+        name: section.name,
+        progress: sectionProgress,
+        videoProgress: sectionVideos
+      };
+    });
+
+    const overallProgress = sections.reduce((sum, section) => sum + section.progress, 0) / sections.length;
+    const completed = sections.every(section => section.progress === 100);
+
+    return {
+      overall: overallProgress,
+      completed,
+      sections
+    };
+  }
+
+  async isUserEnrolled(userId: string, courseId: string): Promise<boolean> {
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: {
+        userId,
+        courseId,
+        status: 'ACTIVE'
+      }
+    });
+    return !!enrollment;
+  }
+
+  async createEnrollment(userId: string, courseId: string): Promise<Enrollment> {
+    console.log('Creating enrollment:', { userId, courseId });
+    
+    try {
+      // Check if enrollment already exists
+      const existingEnrollment = await this.prisma.enrollment.findFirst({
+        where: {
+          userId,
+          courseId,
+          status: 'ACTIVE'
+        }
+      });
+
+      if (existingEnrollment) {
+        console.log('Enrollment already exists:', existingEnrollment);
+        return existingEnrollment;
+      }
+
+      // Create new enrollment
+      const enrollment = await this.prisma.enrollment.create({
+        data: {
+          userId,
+          courseId,
+          status: 'ACTIVE',
+          enrolledAt: new Date()
+        }
+      });
+
+      console.log('Enrollment created successfully:', enrollment);
+      return enrollment;
+    } catch (error) {
+      console.error('Error creating enrollment:', error);
+      throw new Error('Failed to create enrollment');
+    }
+  }
+
+  async initializeCourseProgress(userId: string, courseId: string) {
+    console.log('Initializing course progress:', { userId, courseId });
+    
+    try {
+      // Check if progress already exists
+      const existingProgress = await this.prisma.courseProgress.findUnique({
+        where: {
+          userId_courseId: {
+            userId,
+            courseId
+          }
+        }
+      });
+
+      if (existingProgress) {
+        console.log('Course progress already exists:', existingProgress);
+        return existingProgress;
+      }
+
+      // Create new course progress
+      const courseProgress = await this.prisma.courseProgress.create({
+        data: {
+          userId,
+          courseId,
+          progress: 0,
+          completed: false
+        }
+      });
+
+      console.log('Course progress created successfully:', courseProgress);
+      return courseProgress;
+    } catch (error) {
+      console.error('Error initializing course progress:', error);
+      throw new Error('Failed to initialize course progress');
+    }
+  }
+
+  async updateVideoProgress(
+    userId: string,
+    courseId: string,
+    videoId: string,
+    progress: number,
+    lastPosition: number
+  ): Promise<VideoProgress> {
+    const watched = progress >= 90; // Consider video watched if progress is 90% or more
+
+    // Get or create course progress
+    const courseProgress = await this.prisma.courseProgress.upsert({
       where: {
         userId_courseId: {
           userId,
           courseId
         }
       },
-      include: {
-        videoProgress: true
+      update: {},
+      create: {
+        userId,
+        courseId,
+        progress: 0,
+        completed: false
       }
     });
 
-    if (!courseProgress) {
-      return {
-        courseId,
+    // Update video progress
+    const videoProgress = await this.prisma.videoProgress.upsert({
+      where: {
+        userId_videoId: {
+          userId,
+          videoId
+        }
+      },
+      update: {
+        progress,
+        lastPosition,
+        watched,
+        updatedAt: new Date()
+      },
+      create: {
         userId,
-        progress: 0,
-        completed: false,
-        sections: course.sections.map(section => ({
-          id: section.id,
-          name: section.name,
-          progress: 0,
-          videoProgress: []
-        }))
-      };
-    }
-
-    const sections = course.sections.map(section => {
-      const sectionVideoProgress = section.videos.map(video => {
-        const progress = courseProgress.videoProgress.find(vp => vp.videoId === video.id);
-        return {
-          id: video.id,
-          name: video.name,
-          progress: progress ? progress.progress : 0,
-          watched: progress ? progress.watched : false,
-          lastPosition: progress ? progress.lastPosition : 0
-        };
-      });
-
-      const sectionProgress = sectionVideoProgress.length > 0
-        ? sectionVideoProgress.reduce((sum, video) => sum + video.progress, 0) / sectionVideoProgress.length
-        : 0;
-
-      return {
-        id: section.id,
-        name: section.name,
-        progress: sectionProgress,
-        videoProgress: sectionVideoProgress
-      };
+        videoId,
+        courseId,
+        courseProgressId: courseProgress.id,
+        progress,
+        lastPosition,
+        watched,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
     });
 
-    const totalProgress = sections.length > 0
-      ? sections.reduce((sum, section) => sum + section.progress, 0) / sections.length
-      : 0;
+    // Update course progress
+    const updatedCourseProgress = await this.getCourseProgress(userId, courseId);
+    await this.prisma.courseProgress.update({
+      where: {
+        id: courseProgress.id
+      },
+      data: {
+        progress: updatedCourseProgress.overall,
+        completed: updatedCourseProgress.completed,
+        updatedAt: new Date()
+      }
+    });
 
-    return {
-      courseId,
-      userId,
-      progress: totalProgress,
-      completed: totalProgress >= 100,
-      sections
-    };
+    return videoProgress;
   }
 } 

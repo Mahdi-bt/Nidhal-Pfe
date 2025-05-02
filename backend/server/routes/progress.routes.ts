@@ -40,7 +40,7 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 });
 
 // Update video progress
-router.post('/videos/:videoId', authMiddleware, async (req: AuthRequest, res) => {
+router.put('/video/:videoId', authMiddleware, async (req: AuthRequest, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: 'Unauthorized' });

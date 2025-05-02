@@ -42,19 +42,21 @@ enum CourseLevel {
 }
 
 model Course {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
   description String
   price       Float
   level       CourseLevel @default(BEGINNER)
   category    String
-  duration    Int       // in weeks
+  duration    Int
   thumbnail   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   sections    Section[]
   enrollments Enrollment[]
-  progress    CourseProgress[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  videoProgress VideoProgress[]
+  courseProgress CourseProgress[]
   paymentIntents PaymentIntent[]
 }
 
@@ -81,35 +83,40 @@ model Video {
 }
 
 model CourseProgress {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  courseId  String
-  completed Boolean  @default(false)
-  progress  Float    @default(0)
+  id           String   @id @default(uuid())
+  userId       String
+  courseId     String
+  progress     Float    @default(0)
+  completed    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   videoProgress VideoProgress[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@unique([userId, courseId])
 }
 
 model VideoProgress {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  videoId   String
-  courseProgress CourseProgress @relation(fields: [courseProgressId], references: [id], onDelete: Cascade)
-  courseProgressId String
-  watched   Boolean  @default(false)
-  progress  Float    @default(0)
-  lastPosition Float @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  userId       String
+  courseId     String
+  videoId      String
+  progress     Float    @default(0)
+  lastPosition Float    @default(0)
+  watched      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+  course       Course   @relation(fields: [courseId], references: [id])
+  video        Video    @relation(fields: [videoId], references: [id])
+  courseProgress CourseProgress? @relation(fields: [courseProgressId], references: [id])
+  courseProgressId String?
 
   @@unique([userId, videoId])
+  @@index([courseId])
 }
 
 model Enrollment {

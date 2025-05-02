@@ -3,7 +3,8 @@ import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-03-31.basil'
+  apiVersion: '2025-03-31.basil',
+  typescript: true
 });
 
 export class PaymentService {
@@ -51,11 +52,21 @@ export class PaymentService {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(course.price * 100), // Convert to cents
         currency: 'usd',
+        payment_method_types: ['card'],
         metadata: {
           courseId,
           userId
-        }
+        },
+        // Add test mode specific options
+        confirm: false,
+        capture_method: 'automatic',
+        setup_future_usage: 'off_session',
+        description: `Enrollment for course: ${course.name}`
       });
+
+      if (!paymentIntent.client_secret) {
+        throw new Error('Failed to create payment intent: No client secret');
+      }
 
       // Store payment intent in database
       const dbPaymentIntent = await prisma.paymentIntent.create({
@@ -70,7 +81,8 @@ export class PaymentService {
 
       return {
         clientSecret: paymentIntent.client_secret,
-        paymentIntentId: dbPaymentIntent.id
+        paymentIntentId: dbPaymentIntent.id,
+        amount: course.price
       };
     } catch (error) {
       console.error('Error creating payment intent:', error);
@@ -95,15 +107,6 @@ export class PaymentService {
       const paymentIntent = await prisma.paymentIntent.update({
         where: { id: paymentIntentId },
         data: { status: PaymentStatus.COMPLETED }
-      });
-
-      // Create enrollment
-      await prisma.enrollment.create({
-        data: {
-          userId: paymentIntent.userId,
-          courseId: paymentIntent.courseId,
-          status: EnrollmentStatus.ACTIVE
-        }
       });
 
       return paymentIntent;

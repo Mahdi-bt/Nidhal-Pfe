@@ -25,12 +25,38 @@ export interface Course {
   thumbnail: string;
   sections: Section[];
   createdAt: string;
+  enrollment?: {
+    id: string;
+    status: string;
+    enrolledAt: string;
+  };
+  progress?: {
+    overall: number;
+    completed: boolean;
+    sections: {
+      id: string;
+      name: string;
+      progress: number;
+      videoProgress: {
+        id: string;
+        videoId: string;
+        watched: boolean;
+        progress: number;
+        lastPosition: number;
+      }[];
+    }[];
+  };
 }
 
 export interface Section {
-  id?: string;
+  id: string;
   name: string;
-  videos: Video[];
+  videos: {
+    id: string;
+    name: string;
+    duration: number;
+    filePath: string;
+  }[];
 }
 
 export interface Video {
@@ -71,11 +97,32 @@ export interface MonthlyRevenue {
 }
 
 export interface Progress {
-  courseId: string;
-  videoId: string;
-  progress: number; // 0-100
-  lastPosition: number; // in seconds
-  completed: boolean;
+  videoProgress: {
+    id: string;
+    videoId: string;
+    watched: boolean;
+    progress: number;
+    lastPosition: number;
+  };
+  courseProgress: {
+    id: string;
+    userId: string;
+    courseId: string;
+    progress: number;
+    completed: boolean;
+    sections: Array<{
+      id: string;
+      name: string;
+      progress: number;
+      videoProgress: Array<{
+        id: string;
+        videoId: string;
+        watched: boolean;
+        progress: number;
+        lastPosition: number;
+      }>;
+    }>;
+  };
 }
 
 export interface LoginCredentials {
@@ -368,21 +415,47 @@ const getAuthHeader = () => ({
   'Authorization': `Bearer ${localStorage.getItem('token')}`
 });
 
-export async function getEnrolledCourses(userId: string): Promise<(Course & { progress: number })[]> {
+export async function getEnrolledCourses(userId: string): Promise<(Course & {
+  progress: {
+    overall: number;
+    completed: boolean;
+    sections: {
+      id: string;
+      name: string;
+      progress: number;
+      videoProgress: {
+        id: string;
+        videoId: string;
+        watched: boolean;
+        progress: number;
+        lastPosition: number;
+      }[];
+    }[];
+  };
+})[]> {
   try {
+    console.log('Fetching enrolled courses for user:', userId);
+    
     const response = await fetch(`${BASE_URL}/courses/enrolled`, {
-      headers: getAuthHeader(),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
     });
 
+    console.log('Enrolled courses response status:', response.status);
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch enrolled courses');
+      const errorData = await response.json();
+      console.error('Error fetching enrolled courses:', errorData);
+      throw new Error(errorData.message || 'Failed to fetch enrolled courses');
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('Enrolled courses data:', data);
+    return data;
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch enrolled courses';
-    toast.error(message);
+    console.error('Error in getEnrolledCourses:', error);
     throw error;
   }
 }
@@ -576,45 +649,53 @@ export async function updateVideoProgress(
   data: { progress: number; lastPosition: number }
 ): Promise<Progress> {
   try {
-    const response = await fetch(`${BASE_URL}/progress/videos/${videoId}`, {
-      method: 'POST',
-      headers: { 
+    const response = await fetch(`${BASE_URL}/progress/video/${videoId}`, {
+      method: 'PUT',
+      headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader(),
+        ...getAuthHeader()
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to update progress');
+      throw new Error(error.message || 'Failed to update video progress');
     }
 
-    return await response.json();
+    return response.json();
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to update progress';
-    toast.error(message);
+    console.error('Error updating video progress:', error);
     throw error;
   }
 }
 
 // Payment functions
-export async function createPaymentIntent(courseId: string): Promise<{ clientSecret: string }> {
+export async function createPaymentIntent(courseId: string, userId: string): Promise<{ clientSecret: string; paymentIntentId: string; amount: number }> {
+  console.log('Creating payment intent:', { courseId, userId });
+  
   try {
     const response = await fetch(`${BASE_URL}/payments/create-intent/${courseId}`, {
       method: 'POST',
-      headers: getAuthHeader(),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
     });
 
+    console.log('Payment intent response status:', response.status);
+    
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create payment intent');
+      const errorData = await response.json();
+      console.error('Payment intent error:', errorData);
+      throw new Error(errorData.message || 'Failed to create payment intent');
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('Payment intent created successfully:', data);
+    return data;
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to create payment intent';
-    toast.error(message);
+    console.error('Error in createPaymentIntent:', error);
     throw error;
   }
 }

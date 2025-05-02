@@ -6,6 +6,78 @@ import { upload, uploadImage, uploadVideo } from '../config/upload.config';
 const router = Router();
 const courseService = CourseService.getInstance();
 
+// Get enrolled courses for a user
+router.get('/enrolled', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const courses = await courseService.getEnrolledCourses(userId);
+    res.json(courses);
+  } catch (error: any) {
+    console.error('Error fetching enrolled courses:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Get course progress
+router.get('/:courseId/progress', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { courseId } = req.params;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const progress = await courseService.getCourseProgress(userId, courseId);
+    res.json(progress);
+  } catch (error: any) {
+    console.error('Error fetching course progress:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Get course learning data
+router.get('/:courseId/learn', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { courseId } = req.params;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    const courseData = await courseService.getEnrolledCourse(userId, courseId);
+    res.json(courseData);
+  } catch (error: any) {
+    console.error('Error fetching course learning data:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Update video progress
+router.post('/:courseId/videos/:videoId/progress', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { courseId, videoId } = req.params;
+    const { progress, lastPosition } = req.body;
+    
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    const videoProgress = await courseService.updateVideoProgress(
+      userId,
+      courseId,
+      videoId,
+      progress,
+      lastPosition
+    );
+    res.json(videoProgress);
+  } catch (error: any) {
+    console.error('Error updating video progress:', error);
+    res.status(400).json({ message: error.message });
+  }
+});
+
 // Create a new course (admin only)
 router.post('/', authMiddleware, adminMiddleware, upload.any(), async (req, res) => {
   try {

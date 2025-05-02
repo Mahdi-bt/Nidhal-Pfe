@@ -4,6 +4,7 @@ const prisma = new PrismaClient();
 
 export class ProgressService {
   private static instance: ProgressService;
+  private readonly WATCHED_THRESHOLD = 90; // 90% watched to mark as completed
 
   private constructor() {}
 
@@ -29,7 +30,8 @@ export class ProgressService {
       throw new Error('You are not enrolled in this course');
     }
 
-    return prisma.courseProgress.findUnique({
+    // Get course progress with sections and videos
+    const courseProgress = await prisma.courseProgress.findUnique({
       where: {
         userId_courseId: {
           userId,
@@ -37,9 +39,68 @@ export class ProgressService {
         }
       },
       include: {
-        videoProgress: true
+        videoProgress: {
+          include: {
+            video: {
+              include: {
+                section: true
+              }
+            }
+          }
+        }
       }
     });
+
+    if (!courseProgress) {
+      return null;
+    }
+
+    // Get course sections with videos
+    const sections = await prisma.section.findMany({
+      where: {
+        courseId
+      },
+      include: {
+        videos: true
+      }
+    });
+
+    // Calculate section progress
+    const sectionsWithProgress = sections.map(section => {
+      const sectionVideos = section.videos;
+      const sectionProgress = courseProgress.videoProgress.filter(vp => 
+        sectionVideos.some(v => v.id === vp.videoId)
+      );
+
+      const sectionWatchedVideos = sectionProgress.filter(vp => vp.watched).length;
+      const sectionProgressPercentage = sectionVideos.length > 0 
+        ? (sectionWatchedVideos / sectionVideos.length) * 100 
+        : 0;
+
+      return {
+        id: section.id,
+        name: section.name,
+        progress: sectionProgressPercentage,
+        videoProgress: sectionProgress.map(vp => ({
+          id: vp.id,
+          videoId: vp.videoId,
+          watched: vp.watched,
+          progress: vp.progress,
+          lastPosition: vp.lastPosition
+        }))
+      };
+    });
+
+    // Calculate overall progress
+    const overallProgress = sectionsWithProgress.length > 0
+      ? sectionsWithProgress.reduce((acc, section) => acc + section.progress, 0) / sectionsWithProgress.length
+      : 0;
+
+    return {
+      ...courseProgress,
+      overall: overallProgress,
+      sections: sectionsWithProgress
+    };
   }
 
   async getAllUserProgress(userId: string) {
@@ -123,10 +184,15 @@ export class ProgressService {
           userId,
           courseId,
           progress: 0,
-          completed: false
+          completed: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
         }
       });
     }
+
+    // Calculate watched status based on progress
+    const watched = data.progress >= this.WATCHED_THRESHOLD;
 
     // Update video progress
     const videoProgress = await prisma.videoProgress.upsert({
@@ -139,36 +205,28 @@ export class ProgressService {
       create: {
         userId,
         videoId,
+        courseId,
         courseProgressId: courseProgress.id,
         progress: data.progress,
         lastPosition: data.lastPosition,
-        watched: data.progress >= 0.9 // Mark as watched if progress is 90% or more
+        watched,
+        createdAt: new Date(),
+        updatedAt: new Date()
       },
       update: {
         progress: data.progress,
         lastPosition: data.lastPosition,
-        watched: data.progress >= 0.9
+        watched,
+        updatedAt: new Date()
       }
     });
 
-    // Calculate overall course progress
-    const allVideoProgress = await prisma.videoProgress.findMany({
-      where: {
-        courseProgressId: courseProgress.id
-      }
-    });
-
-    const totalVideos = await prisma.video.count({
-      where: {
-        section: {
-          courseId
-        }
-      }
-    });
-
-    const watchedVideos = allVideoProgress.filter((vp: { watched: boolean }) => vp.watched).length;
-    const overallProgress = totalVideos > 0 ? (watchedVideos / totalVideos) : 0;
-    const completed = overallProgress >= 1;
+    // Get updated course progress
+    const updatedProgress = await this.getCourseProgress(userId, courseId);
+    
+    if (!updatedProgress) {
+      throw new Error('Failed to update course progress');
+    }
 
     // Update course progress
     await prisma.courseProgress.update({
@@ -176,13 +234,14 @@ export class ProgressService {
         id: courseProgress.id
       },
       data: {
-        progress: overallProgress,
-        completed
+        progress: updatedProgress.overall,
+        completed: updatedProgress.overall >= this.WATCHED_THRESHOLD,
+        updatedAt: new Date()
       }
     });
 
     // Update enrollment status if course is completed
-    if (completed) {
+    if (updatedProgress.overall >= this.WATCHED_THRESHOLD) {
       await prisma.enrollment.update({
         where: {
           userId_courseId: {
@@ -191,12 +250,16 @@ export class ProgressService {
           }
         },
         data: {
-          status: 'COMPLETED'
+          status: 'COMPLETED',
+          updatedAt: new Date()
         }
       });
     }
 
-    return videoProgress;
+    return {
+      videoProgress,
+      courseProgress: updatedProgress
+    };
   }
 
   async resetProgress(userId: string, courseId: string) {
