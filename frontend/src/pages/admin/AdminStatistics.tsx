@@ -3,11 +3,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import AdminLayout from '@/components/Layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { ArrowUpRight, ArrowDownRight, Users, BookOpen, GraduationCap, DollarSign, FileText, Video, Download } from 'lucide-react';
-import { getStatistics, getAllCourses, getAllPayments, downloadInvoice, getSuccessfulPaymentsStats, getMonthlyRevenueStats } from '@/lib/api';
+import { ArrowUpRight, ArrowDownRight, Users, BookOpen, GraduationCap, DollarSign, FileText, Video, Download, Printer, Eye, Clock, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import {  getAllCourses, getAllPayments, downloadInvoice, getSuccessfulPaymentsStats, getMonthlyRevenueStats } from '@/lib/api';
 import { Course, Payment, PaymentStats, MonthlyRevenue } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
+
+// Extend Payment type to include course information
+interface PaymentWithCourse extends Payment {
+  course?: {
+    id: string;
+    name: string;
+  };
+}
 
 // Define type for tooltip value
 type ValueType = string | number | Array<string | number>;
@@ -50,7 +58,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 const AdminStatistics = () => {
   const { isAdmin } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<PaymentWithCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<keyof Payment>('createdAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -58,6 +66,8 @@ const AdminStatistics = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [successfulPaymentsStats, setSuccessfulPaymentsStats] = useState<PaymentStats | null>(null);
   const [monthlyRevenueStats, setMonthlyRevenueStats] = useState<MonthlyRevenue[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   useEffect(() => {
     const fetchData = async () => {
@@ -101,9 +111,9 @@ const AdminStatistics = () => {
     totalRevenue: payments.reduce((acc, payment) => 
       payment.status === 'completed' ? acc + payment.amount : acc, 0),
     totalTransactions: payments.length,
-    successfulPayments: payments.filter(p => p.status === 'completed').length,
-    failedPayments: payments.filter(p => p.status === 'failed').length,
-    pendingPayments: payments.filter(p => p.status === 'pending').length,
+    successfulPayments: payments.filter(p => p.status.toLowerCase() === 'completed').length,
+    failedPayments: payments.filter(p => p.status.toLowerCase() === 'failed').length,
+    pendingPayments: payments.filter(p => p.status.toLowerCase() === 'pending').length,
     averageTransactionValue: payments.length > 0 
       ? payments.reduce((acc, payment) => acc + payment.amount, 0) / payments.length 
       : 0
@@ -125,22 +135,92 @@ const AdminStatistics = () => {
 
   const monthlyRevenueChartData = monthlyRevenueStats;
 
+  // Prepare data for payment status distribution chart
+  const paymentStatusData = [
+    { 
+      name: 'Completed', 
+      value: paymentStats.successfulPayments,
+      color: '#00C49F'  // Green
+    },
+    { 
+      name: 'Failed', 
+      value: paymentStats.failedPayments,
+      color: '#FF8042'  // Red
+    },
+    { 
+      name: 'Pending', 
+      value: paymentStats.pendingPayments,
+      color: '#FFBB28'  // Yellow
+    }
+  ].filter(item => item.value > 0); // Only show statuses that have values
+
   // Handle invoice download
-  const handleDownloadInvoice = async (paymentIntentId: string) => {
+  const handleDownloadInvoice = async (paymentId: string) => {
     try {
-      const blob = await downloadInvoice(paymentIntentId);
+      const response = await downloadInvoice(paymentId);
+      const blob = new Blob([response], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `invoice-${paymentIntentId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${paymentId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading invoice:', error);
       toast.error('Failed to download invoice');
     }
+  };
+
+  const handlePrintInvoice = async (paymentId: string) => {
+    try {
+      const response = await downloadInvoice(paymentId);
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create an iframe to load the PDF
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      
+      iframe.src = url;
+      
+      // Wait for the PDF to load
+      iframe.onload = () => {
+        iframe.contentWindow?.print();
+        // Clean up after printing
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          window.URL.revokeObjectURL(url);
+        }, 1000);
+      };
+    } catch (error) {
+      console.error('Error printing invoice:', error);
+      toast.error('Failed to print invoice');
+    }
+  };
+
+  const handleViewDetails = (paymentId: string) => {
+    const payment = payments.find(p => p.id === paymentId);
+    if (!payment) {
+      toast.error('Payment details not found');
+      return;
+    }
+
+    // Create a modal or dialog with payment details
+    toast.info(
+      <div className="space-y-2">
+        <h3 className="font-bold">Payment Details</h3>
+        <p>ID: {payment.id}</p>
+        <p>Amount: {formatter(payment.amount)}</p>
+        <p>Status: {payment.status}</p>
+        <p>Date: {new Date(payment.createdAt).toLocaleString()}</p>
+        {payment.course && (
+          <p>Course: {payment.course.name}</p>
+        )}
+      </div>
+    );
   };
 
   // Sort and filter payments
@@ -173,6 +253,16 @@ const AdminStatistics = () => {
       
       return 0;
     });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedAndFilteredPayments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedPayments = sortedAndFilteredPayments.slice(startIndex, startIndex + itemsPerPage);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   // Handle sort
   const handleSort = (field: keyof Payment) => {
@@ -334,31 +424,35 @@ const AdminStatistics = () => {
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Completed', value: paymentStats.successfulPayments },
-                        { name: 'Failed', value: paymentStats.failedPayments },
-                        { name: 'Pending', value: paymentStats.pendingPayments }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      paddingAngle={5}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {['#00C49F', '#FF8042', '#FFBB28'].map((color, index) => (
-                        <Cell key={`cell-${index}`} fill={color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                {paymentStatusData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={paymentStatusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {paymentStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: number) => [`${value} payments`, 'Count']}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-500">
+                    No payment data available
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -453,14 +547,14 @@ const AdminStatistics = () => {
                           </div>
                         </td>
                       </tr>
-                    ) : sortedAndFilteredPayments.length === 0 ? (
+                    ) : paginatedPayments.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
                           No transactions found
                         </td>
                       </tr>
                     ) : (
-                      sortedAndFilteredPayments.map((payment) => (
+                      paginatedPayments.map((payment) => (
                         <tr key={payment.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {payment.id}
@@ -481,17 +575,49 @@ const AdminStatistics = () => {
                             {new Date(payment.createdAt).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            {payment.status === 'completed' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDownloadInvoice(payment.id)}
-                                className="text-primary hover:text-primary/80"
-                              >
-                                <Download className="h-4 w-4 mr-1" />
-                                Download
-                              </Button>
-                            )}
+                            {(() => {
+                              const status = payment.status.toLowerCase();
+                              switch (status) {
+                                case 'completed':
+                                  return (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDownloadInvoice(payment.id)}
+                                      className="text-primary hover:text-primary/80"
+                                    >
+                                      <Download className="h-4 w-4 mr-1" />
+                                      Download PDF
+                                    </Button>
+                                  );
+                                case 'pending':
+                                  return (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-yellow-600 hover:text-yellow-700"
+                                      disabled
+                                    >
+                                      <Clock className="h-4 w-4 mr-1" />
+                                      Pending
+                                    </Button>
+                                  );
+                                case 'failed':
+                                  return (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700"
+                                      disabled
+                                    >
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Failed
+                                    </Button>
+                                  );
+                                default:
+                                  return null;
+                              }
+                            })()}
                           </td>
                         </tr>
                       ))
@@ -499,6 +625,44 @@ const AdminStatistics = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination Controls */}
+              {!loading && totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedAndFilteredPayments.length)} of {sortedAndFilteredPayments.length} entries
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="w-8 h-8"
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

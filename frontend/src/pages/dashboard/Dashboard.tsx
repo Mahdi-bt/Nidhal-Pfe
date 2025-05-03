@@ -2,13 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { getEnrolledCourses } from '@/lib/api';
+import { getEnrolledCourses, Course } from '@/lib/api';
 import CourseProgress from '@/components/Course/CourseProgress';
 import { Button } from '@/components/ui/button';
 
+type CourseWithProgress = Course & {
+  progress: {
+    overall: number;
+    completed: boolean;
+    sections: Array<{
+      id: string;
+      name: string;
+      progress: number;
+      videoProgress: Array<{
+        id: string;
+        videoId: string;
+        watched: boolean;
+        progress: number;
+        lastPosition: number;
+      }>;
+    }>;
+  };
+};
+
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
-  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<CourseWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 

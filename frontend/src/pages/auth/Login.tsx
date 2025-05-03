@@ -25,9 +25,27 @@ const Login = () => {
 
     try {
       const response = await login(email, password);
+      console.log(response)
+      
+      // Check if user is admin
+      const isAdmin = response.user.role.toLowerCase() === 'admin';
+      
+      // Only check status for non-admin users
+      if (!isAdmin) {
+        console.log(response.user.status?.toLowerCase())
+        if (response.user.status === 'BLOCKED') {
+          toast.error('Your account has been blocked. Please contact support.');
+          return;
+        }
+
+        if (response.user.status !== 'ACTIVE') {
+          toast.error('Your account is not active. Please contact support.');
+          return;
+        }
+      }
       
       // Handle role-based redirection
-      if (response.user.role.toLowerCase() === 'admin') {
+      if (isAdmin) {
         if (from.startsWith('/admin')) {
           navigate(from);
         } else {

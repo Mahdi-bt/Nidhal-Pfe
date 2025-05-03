@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { toast } from '@/components/ui/sonner';
 
 const Register = () => {
   const { register, loading } = useAuth();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +23,8 @@ const Register = () => {
     
     try {
       await register(name, email, password);
+      toast.success('Registration successful!');
+      navigate('/dashboard');
     } catch (error) {
       console.error('Registration error:', error);
       // Error is already handled by the auth context
