@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom';
 import { getAllCourses } from '@/lib/api';
 import { Course } from '@/lib/api';
 import { toast } from '@/components/ui/sonner';
-
+const getFileUrl = (path: string) => {
+  if (!path) return '/placeholder-image.jpg';
+  return `http://localhost:3000/${path}`;
+};
 const FeaturedCourses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +72,7 @@ const FeaturedCourses = () => {
             <div key={course.id} className="card h-full flex flex-col">
               <div className="relative">
                 <img 
-                  src={course.thumbnail} 
+                  src={getFileUrl(course.thumbnail)} 
                   alt={course.name} 
                   className="w-full h-48 object-cover rounded-t-lg"
                 />

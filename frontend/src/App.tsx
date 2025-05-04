@@ -20,6 +20,10 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCourses from "./pages/admin/AdminCourses";
 import AdminStatistics from "./pages/admin/AdminStatistics";
+import EditProfile from '@/pages/profile/EditProfile';
+import HelpCenter from '@/pages/legal/HelpCenter';
+import PrivacyPolicy from '@/pages/legal/PrivacyPolicy';
+import TermsOfService from '@/pages/legal/TermsOfService';
 
 const queryClient = new QueryClient();
 
@@ -37,6 +41,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
             
             {/* Course Routes */}
             <Route path="/courses" element={<Courses />} />
@@ -46,6 +51,7 @@ const App = () => (
             
             {/* User Dashboard */}
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile/edit" element={<EditProfile />} />
             
             {/* Admin Routes */}
             <Route
@@ -72,6 +78,11 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            
+            {/* Legal Routes */}
+            <Route path="/support" element={<HelpCenter />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

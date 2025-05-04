@@ -136,6 +136,31 @@ export class CourseService {
 
   async updateCourse(id: string, data: CourseData) {
     // First delete existing sections and videos
+    const existingCourse = await this.prisma.course.findUnique({
+      where: { id },
+      include: {
+        sections: {
+          include: {
+            videos: true
+          }
+        }
+      }
+    });
+
+    if (!existingCourse) {
+      throw new Error('Course not found');
+    }
+
+    // Delete video progress records first
+    for (const section of existingCourse.sections) {
+      for (const video of section.videos) {
+        await this.prisma.videoProgress.deleteMany({
+          where: { videoId: video.id }
+        });
+      }
+    }
+
+    // Then delete sections (this will cascade delete videos)
     await this.prisma.section.deleteMany({
       where: { courseId: id }
     });

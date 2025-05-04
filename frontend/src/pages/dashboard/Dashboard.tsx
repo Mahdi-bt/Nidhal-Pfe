@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { getEnrolledCourses, Course } from '@/lib/api';
+import { getEnrolledCourses, Course, Payment, downloadInvoice, getMyTransactions } from '@/lib/api';
 import CourseProgress from '@/components/Course/CourseProgress';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Download, Clock, XCircle } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 type CourseWithProgress = Course & {
   progress: {
@@ -28,6 +31,7 @@ type CourseWithProgress = Course & {
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState<CourseWithProgress[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -37,18 +41,23 @@ const Dashboard = () => {
       return;
     }
 
-    const fetchEnrolledCourses = async () => {
+    const fetchData = async () => {
       try {
         if (!user) return;
-        const data = await getEnrolledCourses(user.id);
-        setEnrolledCourses(data);
+        const [coursesData, paymentsData] = await Promise.all([
+          getEnrolledCourses(user.id),
+          getMyTransactions()
+        ]);
+        setEnrolledCourses(coursesData);
+        setPayments(paymentsData);
       } catch (error) {
-        console.error('Error fetching enrolled courses:', error);
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
     };
-    fetchEnrolledCourses();
+    fetchData();
   }, [user, isAuthenticated, navigate]);
 
   // For statistics
@@ -70,6 +79,30 @@ const Dashboard = () => {
   const avgProgress = statsCourses.length
     ? statsCourses.reduce((sum, c) => sum + (c.progress || 0), 0) / statsCourses.length
     : 0;
+
+  // Format currency
+  const formatter = (value: number): string => {
+    return `$${value.toLocaleString()}`;
+  };
+
+  // Handle invoice download
+  const handleDownloadInvoice = async (paymentId: string) => {
+    try {
+      const response = await downloadInvoice(paymentId);
+      const blob = new Blob([response], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${paymentId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      toast.error('Failed to download invoice');
+    }
+  };
 
   return (
     <MainLayout>
@@ -198,7 +231,124 @@ const Dashboard = () => {
           )}
         </div>
         
-        
+        {/* Transaction History Section */}
+        <div className="mt-12">
+          <Card>
+            <CardHeader>
+              <CardTitle>Transaction History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Transaction ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center">
+                          <div className="flex justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : payments.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                          No transactions found
+                        </td>
+                      </tr>
+                    ) : (
+                      payments.map((payment) => (
+                        <tr key={payment.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {payment.id}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatter(payment.amount)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              payment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              payment.status === 'failed' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {payment.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(payment.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            {(() => {
+                              const status = payment.status.toLowerCase();
+                              switch (status) {
+                                case 'completed':
+                                  return (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDownloadInvoice(payment.id)}
+                                      className="text-primary hover:text-primary/80"
+                                    >
+                                      <Download className="h-4 w-4 mr-1" />
+                                      Download Invoice
+                                    </Button>
+                                  );
+                                case 'pending':
+                                  return (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-yellow-600 hover:text-yellow-700"
+                                      disabled
+                                    >
+                                      <Clock className="h-4 w-4 mr-1" />
+                                      Pending
+                                    </Button>
+                                  );
+                                case 'failed':
+                                  return (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700"
+                                      disabled
+                                    >
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Failed
+                                    </Button>
+                                  );
+                                default:
+                                  return null;
+                              }
+                            })()}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </MainLayout>
   );

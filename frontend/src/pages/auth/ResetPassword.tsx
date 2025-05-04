@@ -1,26 +1,65 @@
-
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/Layout/MainLayout';
 import { Button } from '@/components/ui/button';
-import { requestPasswordReset } from '@/lib/api';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
+import { requestPasswordReset, resetPassword } from '@/lib/api';
 
 const ResetPassword = () => {
+  const { token } = useParams();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isValidToken, setIsValidToken] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (token) {
+      setIsValidToken(true);
+    }
+  }, [token]);
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       setIsSubmitting(true);
       await requestPasswordReset(email);
       setIsSubmitted(true);
-      toast.success('Password reset link sent to your email');
+      toast.success('If an account exists with this email, you will receive a password reset link.');
     } catch (error) {
       console.error('Reset password error:', error);
+      toast.error('Failed to send reset link. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await resetPassword(token!, newPassword);
+      toast.success('Password has been reset successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Reset password error:', error);
+      toast.error('Failed to reset password. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -50,12 +89,18 @@ const ResetPassword = () => {
                 </svg>
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-white">Reset Password</h2>
-            <p className="text-white/80">Enter your email to receive a password reset link.</p>
+            <h2 className="text-2xl font-bold text-white">
+              {isValidToken ? 'Reset Password' : 'Forgot Password'}
+            </h2>
+            <p className="text-white/80">
+              {isValidToken 
+                ? 'Enter your new password below.'
+                : 'Enter your email to receive a password reset link.'}
+            </p>
           </div>
           
           <div className="p-6">
-            {isSubmitted ? (
+            {isSubmitted && !isValidToken ? (
               <div className="text-center">
                 <div className="bg-green-100 rounded-full mx-auto h-16 w-16 flex items-center justify-center mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
@@ -73,34 +118,58 @@ const ResetPassword = () => {
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label htmlFor="email" className="form-label">Email address</label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="4" width="20" height="16" rx="2" />
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                      </svg>
-                    </span>
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="input-field pl-10"
-                      required
-                    />
+              <form onSubmit={isValidToken ? handleResetPassword : handleForgotPassword}>
+                {!isValidToken ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                  </div>
+                )}
                 
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full mt-6"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Sending Reset Link...' : 'Send Reset Link'}
+                  {isSubmitting 
+                    ? (isValidToken ? 'Resetting Password...' : 'Sending Reset Link...')
+                    : (isValidToken ? 'Reset Password' : 'Send Reset Link')}
                 </Button>
                 
                 <div className="mt-4 text-center text-sm">

@@ -32,7 +32,15 @@ router.put('/profile', authMiddleware, async (req, res) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
     const userId = req.user.id;
-    const updatedProfile = await userService.updateProfile(userId, req.body);
+    const { name, email, currentPassword, newPassword } = req.body;
+    
+    const updatedProfile = await userService.updateProfile(userId, {
+      name,
+      email,
+      currentPassword,
+      newPassword
+    });
+    
     res.json(updatedProfile);
   } catch (error: any) {
     res.status(400).json({ message: error.message });

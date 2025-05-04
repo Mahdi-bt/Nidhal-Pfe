@@ -122,6 +122,15 @@ export class UserService {
     }
   }
 
+  async editProfile(userId: string, data: {
+    name?: string;
+    email?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) {
+    return this.updateProfile(userId, data);
+  }
+
   // Admin functions
   async getAllUsers() {
     try {

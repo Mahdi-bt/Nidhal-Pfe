@@ -84,8 +84,8 @@ const MyCourses = () => {
     
     const matchesFilter = 
       filter === 'all' || 
-      (filter === 'in-progress' && course.progress?.overall > 0 && course.progress?.overall < 100) ||
-      (filter === 'completed' && course.progress?.overall === 100) ||
+      (filter === 'in-progress' && course.progress?.overall > 0 && !course.progress?.completed) ||
+      (filter === 'completed' && course.progress?.completed) ||
       (filter === 'not-started' && course.progress?.overall === 0);
     
     return matchesSearch && matchesFilter;

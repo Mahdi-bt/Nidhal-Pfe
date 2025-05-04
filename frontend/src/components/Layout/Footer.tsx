@@ -12,24 +12,13 @@ const Footer: React.FC = () => {
           <div className="space-y-4">
             <Link to="/" className="flex items-center space-x-2">
               <div className="bg-primary/10 p-2 rounded-lg">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-primary"
-                >
-                  <path d="m18 16 4-4-4-4" />
-                  <path d="m6 8-4 4 4 4" />
-                  <path d="m14.5 4-5 16" />
-                </svg>
+              <img 
+                src="/local-images/logo_tra.png" 
+                alt="Warzeez Training Logo" 
+                className="h-8 w-auto"
+              />
               </div>
-              <span className="text-xl font-bold text-gray-900">Training Center</span>
+              <span className="text-xl font-bold text-gray-900">Warzeez Training</span>
             </Link>
             <p className="text-gray-600 text-sm">
               Empowering learners worldwide with quality education and practical skills.
@@ -112,7 +101,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-gray-200/50 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-sm text-gray-500">
-              © {currentYear} Training Center. All rights reserved.
+              © {currentYear} Warzeez Training. All rights reserved.
             </div>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link to="/support" className="text-gray-600 hover:text-primary text-sm transition-colors">

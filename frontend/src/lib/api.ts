@@ -453,25 +453,38 @@ export async function updateUserProfile(
 // Reset password request
 export async function requestPasswordReset(email: string): Promise<void> {
   try {
-    // In a real app, this would be a fetch request
-    // await fetch(`${BASE_URL}/auth/reset-password`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ email }),
-    // });
-    
-    // Check if email exists
-    const user = mockUsers.find(u => u.email === email);
-    
-    if (!user) {
-      // Don't reveal whether user exists for security
-      return;
+    const response = await fetch(`${BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to request password reset');
     }
-    
-    // In a real app, this would send an email
-    console.log(`Password reset email sent to ${email}`);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to request password reset';
+    toast.error(message);
+    throw error;
+  }
+}
+
+// Reset password with token
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to reset password');
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to reset password';
     toast.error(message);
     throw error;
   }
@@ -689,4 +702,18 @@ export const getMonthlyRevenueStats = async (): Promise<MonthlyRevenue[]> => {
     toast.error(message);
     throw error;
   }
+};
+
+export const getCoursesByCategory = async (category: string): Promise<Course[]> => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}/courses/category/${category}`, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch courses by category');
+  }
+
+  return response.json();
 };
