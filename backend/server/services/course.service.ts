@@ -754,6 +754,7 @@ export class CourseService {
       create: {
         userId,
         videoId,
+        courseId,
         courseProgressId: courseProgress.id,
         progress,
         lastPosition,

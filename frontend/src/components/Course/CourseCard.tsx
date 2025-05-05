@@ -40,7 +40,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
             <span>•</span>
             <span>{course.enrolledStudents} learners</span>
           </div>
-          <div className="text-lg font-bold text-primary">${course.price}</div>
+          <div className="text-lg font-bold text-primary"> {course.price} TND</div>
         </div>
       </div>
       <div className="px-4 pb-4">

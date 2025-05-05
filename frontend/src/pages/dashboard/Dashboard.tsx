@@ -72,10 +72,16 @@ const Dashboard = () => {
     const progress = typeof c.progress === 'number' ? c.progress : (c.progress?.overall ?? 0);
     return progress > 0 && progress < 1;
   });
-
+  console.log(enrolledCourses);
   // Derive statistics from enrolledCourses
-  const completedCourses = statsCourses.filter(c => c.progress >= 1);
-  const notStartedCourses = statsCourses.filter(c => c.progress === 0);
+  const completedCourses = enrolledCourses.filter(c => {
+    const progress = typeof c.progress === 'number' ? c.progress : (c.progress?.overall ?? 0);
+    return progress >= 1 || c.progress?.completed === true;
+  });
+  const notStartedCourses = enrolledCourses.filter(c => {
+    const progress = typeof c.progress === 'number' ? c.progress : (c.progress?.overall ?? 0);
+    return progress === 0;
+  });
   const avgProgress = statsCourses.length
     ? statsCourses.reduce((sum, c) => sum + (c.progress || 0), 0) / statsCourses.length
     : 0;
@@ -218,15 +224,25 @@ const Dashboard = () => {
                 <Link to="/courses">Browse Courses</Link>
               </Button>
             </div>
-          ) : (
+          ) : inProgressCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {inProgressCourses.length > 0 ? (
-                inProgressCourses.slice(0, 3).map(course => (
-                  <CourseProgress key={course.id} course={course} />
-                ))
-              ) : enrolledCourses.slice(0, 3).map(course => (
+              {inProgressCourses.slice(0, 3).map(course => (
                 <CourseProgress key={course.id} course={course} />
               ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+              </svg>
+              <h3 className="text-xl font-bold mb-2">No courses in progress</h3>
+              <p className="text-gray-600 mb-6">
+                Start a new course or continue your learning journey
+              </p>
+              <Button asChild>
+                <Link to="/courses">Browse Courses</Link>
+              </Button>
             </div>
           )}
         </div>

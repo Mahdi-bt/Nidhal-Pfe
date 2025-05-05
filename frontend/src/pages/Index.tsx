@@ -161,16 +161,7 @@ const Index = () => {
               >
                 <Link to="/courses">Browse Courses</Link>
               </Button>
-              {!isAuthenticated && (
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  asChild 
-                  className="border-white text-white hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:shadow-white/10"
-                >
-                  <Link to="/register">Create Account</Link>
-                </Button>
-              )}
+             
             </div>
           </motion.div>
         </div>

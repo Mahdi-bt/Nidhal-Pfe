@@ -25,7 +25,7 @@ const HelpCenter = () => {
   ];
 
   const handleEmailClick = () => {
-    window.location.href = 'mailto:nidhalbensaid123@gmail.com?subject=Support Request';
+    window.location.href = 'mailto:contact@warzeez.net?subject=Support Request';
   };
 
   return (
@@ -56,7 +56,7 @@ const HelpCenter = () => {
             </p>
             <div className="space-y-4">
               <div className="space-y-2">
-                <p><strong>Email:</strong> support@warzeeztraining.com</p>
+                <p><strong>Email:</strong> contact@warzeez.net</p>
                 <p><strong>Response Time:</strong> Within 24 hours</p>
               </div>
               <Button 

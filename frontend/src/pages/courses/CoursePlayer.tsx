@@ -373,21 +373,7 @@ const CoursePlayer = () => {
                 )}
               </div>
               
-              {/* Notes Section */}
-              <div className="mt-8 bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-4 border-b">
-                  <h2 className="font-bold">Your Notes</h2>
-                </div>
-                <div className="p-4">
-                  <textarea 
-                    className="w-full h-32 p-3 border border-gray-300 rounded-md" 
-                    placeholder="Take notes as you watch..."
-                  ></textarea>
-                  <div className="mt-2 flex justify-end">
-                    <button className="btn-primary">Save Notes</button>
-                  </div>
-                </div>
-              </div>
+           
             </div>
             
             {/* Course Curriculum Column */}

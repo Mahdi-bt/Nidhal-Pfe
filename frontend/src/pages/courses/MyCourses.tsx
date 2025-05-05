@@ -84,9 +84,10 @@ const MyCourses = () => {
     
     const matchesFilter = 
       filter === 'all' || 
-      (filter === 'in-progress' && course.progress?.overall > 0 && !course.progress?.completed) ||
-      (filter === 'completed' && course.progress?.completed) ||
-      (filter === 'not-started' && course.progress?.overall === 0);
+      (filter === 'in-progress' && course.progress?.overall > 0 && course.progress?.overall < 1) ||
+      (filter === 'completed' && (course.progress?.overall >= 1 || course.progress?.completed === true)) ||
+      // Not started: course has 0 progress and is not marked as completed
+      (filter === 'not-started' && course.progress?.overall === 0 && course.progress?.completed !== true);
     
     return matchesSearch && matchesFilter;
   });

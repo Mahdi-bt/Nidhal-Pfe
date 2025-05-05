@@ -5,7 +5,7 @@ import { Mail } from 'lucide-react';
 
 const TermsOfService = () => {
   const handleEmailClick = () => {
-    window.location.href = 'mailto:nidhalbensaid123@gmail.com?subject=Terms of Service Inquiry';
+    window.location.href = 'mailto:contact@warzeez.net?subject=Terms of Service Inquiry';
   };
 
   return (
@@ -90,7 +90,7 @@ const TermsOfService = () => {
               For questions about these Terms of Service, please contact us at:
             </p>
             <div className="space-y-4">
-              <p className="text-gray-600">Email: support@warzeeztraining.com</p>
+              <p className="text-gray-600">Email: contact@warzeez.net</p>
               <Button 
                 onClick={handleEmailClick}
                 className="flex items-center gap-2"
