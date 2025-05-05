@@ -151,7 +151,7 @@ const Index = () => {
           >
             <h2 className="text-4xl font-bold text-white mb-6">Ready to Start Your Learning Journey?</h2>
             <p className="text-lg text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Join thousands of students who have advanced their careers through our training programs.
+              Join thousands of learners who have advanced their careers through our training programs.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 

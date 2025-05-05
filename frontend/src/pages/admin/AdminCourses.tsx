@@ -421,7 +421,7 @@ const AdminCourses = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Price ($)</Label>
+                <Label htmlFor="price">Price (TND)</Label>
                 <Input
                   id="price"
                   name="price"
@@ -761,7 +761,7 @@ const AdminCourses = () => {
                         {course.category}
                       </span>
                     </div>
-                    <div className="mt-2 md:mt-0 text-lg font-bold text-primary">${course.price}</div>
+                    <div className="mt-2 md:mt-0 text-lg font-bold text-primary">{course.price} TND</div>
                   </div>
                   
                   <h3 className="text-xl font-bold mb-2">{course.name}</h3>
@@ -782,7 +782,7 @@ const AdminCourses = () => {
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                       </svg>
-                      <span>{course.enrolledStudents} students</span>
+                      <span>{course.enrolledStudents} learners</span>
                     </div>
                     <div className="flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

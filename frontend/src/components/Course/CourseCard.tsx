@@ -38,7 +38,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
           <div className="flex items-center space-x-2 text-sm">
             <span>{course.duration} weeks</span>
             <span>•</span>
-            <span>{course.enrolledStudents} students</span>
+            <span>{course.enrolledStudents} learners</span>
           </div>
           <div className="text-lg font-bold text-primary">${course.price}</div>
         </div>

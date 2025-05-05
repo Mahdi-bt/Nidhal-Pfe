@@ -398,7 +398,7 @@ const CourseDetail = () => {
                   </div>
                   <div className="flex items-center bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
                     <Users className="h-5 w-5 mr-2 text-primary" />
-                    <span className="font-medium">{course.enrolledStudents} students</span>
+                    <span className="font-medium">{course.enrolledStudents} learners</span>
                   </div>
                   <Badge variant="secondary" className="px-4 py-2 text-sm">
                     {course.level}
@@ -589,7 +589,7 @@ const CourseDetail = () => {
                       </div>
                       <p className="text-gray-600 leading-relaxed">
                         John Smith is an expert instructor with over 10 years of experience in the field. 
-                        He has helped thousands of students master complex topics through his clear and 
+                        He has helped thousands of learners master complex topics through his clear and 
                         engaging teaching style.
                       </p>
                     </CardContent>
@@ -603,7 +603,7 @@ const CourseDetail = () => {
               {/* Enrollment Card */}
               <Card className="sticky top-24 border border-gray-100 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-3xl font-bold text-primary">${course.price}</CardTitle>
+                  <CardTitle className="text-3xl font-bold text-primary">{course.price} TND</CardTitle>
                   {isEnrolled && courseProgress && (
                     <div className="mt-2">
                       <div className="flex items-center text-sm text-gray-600">
@@ -683,7 +683,7 @@ const CourseDetail = () => {
                         </CardContent>
                         <CardFooter className="p-4 pt-0">
                           <div className="w-full flex justify-between items-center">
-                            <span className="font-bold text-primary">${relatedCourse.price}</span>
+                            <span className="font-bold text-primary">{relatedCourse.price} TND</span>
                             <Button variant="ghost" size="sm" className="group">
                               View Course
                               <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />

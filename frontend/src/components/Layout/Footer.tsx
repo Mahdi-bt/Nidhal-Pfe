@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Linkedin } from 'lucide-react';
+import { Github, Twitter, Linkedin, Facebook } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -11,13 +11,13 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="bg-primary/10 p-2 rounded-lg">
+              
               <img 
                 src="/local-images/logo_tra.png" 
                 alt="Warzeez Training Logo" 
                 className="h-8 w-auto"
               />
-              </div>
+              
               <span className="text-xl font-bold text-gray-900">Warzeez Training</span>
             </Link>
             <p className="text-gray-600 text-sm">
@@ -71,29 +71,14 @@ const Footer: React.FC = () => {
             <h3 className="font-semibold text-gray-900 mb-4">Connect With Us</h3>
             <div className="flex space-x-4">
               <a
-                href="https://github.com"
+                href="https://www.facebook.com/Warzeez"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-600 hover:text-primary transition-colors"
               >
-                <Github className="h-5 w-5" />
+                <Facebook className="h-5 w-5"  />
               </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 hover:text-primary transition-colors"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-600 hover:text-primary transition-colors"
-              >
-                <Linkedin className="h-5 w-5" />
-              </a>
+              
             </div>
           </div>
         </div>

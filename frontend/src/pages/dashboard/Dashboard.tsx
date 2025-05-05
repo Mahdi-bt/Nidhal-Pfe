@@ -82,7 +82,7 @@ const Dashboard = () => {
 
   // Format currency
   const formatter = (value: number): string => {
-    return `$${value.toLocaleString()}`;
+    return `${value.toLocaleString()} TND`;
   };
 
   // Handle invoice download

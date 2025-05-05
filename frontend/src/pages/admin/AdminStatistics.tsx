@@ -44,12 +44,12 @@ const CustomTooltip = ({ active, payload, label }: {
 // Format number as currency
 const formatter = (value: number | ValueType): string => {
   if (typeof value === 'number') {
-    return `$${value.toLocaleString()}`;
+    return `${value.toLocaleString()} TND`;
   } else if (typeof value === 'string') {
     const num = parseFloat(value);
-    return isNaN(num) ? '$0' : `$${num.toLocaleString()}`;
+    return isNaN(num) ? '0 TND' : `${num.toLocaleString()} TND`;
   }
-  return '$0';
+  return '0 TND';
 };
 
 // COLORS array for pie charts
@@ -368,7 +368,7 @@ const AdminStatistics = () => {
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis tickFormatter={(value) => `$${value}`} />
+                    <YAxis tickFormatter={(value) => `${value} TND`} />
                     <Tooltip content={<CustomTooltip />} />
                     <Line
                       type="monotone"

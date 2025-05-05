@@ -384,7 +384,9 @@ export class CourseService {
       const enrollments = await this.prisma.enrollment.findMany({
         where: {
           userId,
-          status: 'ACTIVE'
+          status: {
+            in: ['ACTIVE', 'COMPLETED']
+          }
         },
         include: {
           course: {
@@ -579,7 +581,11 @@ export class CourseService {
     const videoProgress = await this.prisma.videoProgress.findMany({
       where: {
         userId,
-        courseId
+        video: {
+          section: {
+            courseId
+          }
+        }
       }
     });
 
@@ -748,7 +754,6 @@ export class CourseService {
       create: {
         userId,
         videoId,
-        courseId,
         courseProgressId: courseProgress.id,
         progress,
         lastPosition,
