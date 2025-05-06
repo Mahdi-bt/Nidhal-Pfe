@@ -148,8 +148,8 @@ export class UserService {
           createdAt: 'desc'
         }
       });
-
-      return users;
+      //return only type of role is user
+      return users.filter((user) => user.role === 'USER');
     } catch (error) {
       console.error('Error getting all users:', error);
       throw new Error('Failed to get all users');
