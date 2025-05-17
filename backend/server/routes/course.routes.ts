@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { CourseService } from '../services/course.service';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware';
 import { upload, uploadImage, uploadVideo } from '../config/upload.config';
+import path from 'path';
 
 const router = Router();
 const courseService = CourseService.getInstance();
@@ -87,7 +88,7 @@ router.post('/', authMiddleware, adminMiddleware, upload.any(), async (req, res)
     // Add thumbnail path if provided
     const thumbnailFile = files.find(file => file.fieldname === 'thumbnail');
     if (thumbnailFile) {
-      const thumbnailFileName = thumbnailFile.path.split('uploads\\').pop()?.replace(/\\/g, '/');
+      const thumbnailFileName = thumbnailFile.path.split(path.sep).pop();
       courseData.thumbnail = `uploads/${thumbnailFileName}`;
     }
     
@@ -100,7 +101,7 @@ router.post('/', authMiddleware, adminMiddleware, upload.any(), async (req, res)
             const videoField = `videos[${sectionIndex}][${videoIndex}]`;
             const videoFile = files.find(file => file.fieldname === videoField);
             if (!videoFile?.path) return { ...video, filePath: video.filePath };
-            const videoFileName = videoFile.path.split('uploads\\').pop()?.replace(/\\/g, '/');
+            const videoFileName = videoFile.path.split(path.sep).pop();
             return {
               ...video,
               filePath: `uploads/${videoFileName}`,
@@ -129,7 +130,7 @@ router.put('/:id', authMiddleware, adminMiddleware, upload.any(), async (req, re
     // Add thumbnail path if provided
     const thumbnailFile = files.find(file => file.fieldname === 'thumbnail');
     if (thumbnailFile) {
-      const thumbnailFileName = thumbnailFile.path.split('uploads\\').pop()?.replace(/\\/g, '/');
+      const thumbnailFileName = thumbnailFile.path.split(path.sep).pop();
       courseData.thumbnail = `uploads/${thumbnailFileName}`;
     }
     
@@ -142,7 +143,7 @@ router.put('/:id', authMiddleware, adminMiddleware, upload.any(), async (req, re
             const videoField = `videos[${sectionIndex}][${videoIndex}]`;
             const videoFile = files.find(file => file.fieldname === videoField);
             if (!videoFile?.path) return { ...video, filePath: video.filePath };
-            const videoFileName = videoFile.path.split('uploads\\').pop()?.replace(/\\/g, '/');
+            const videoFileName = videoFile.path.split(path.sep).pop();
             return {
               ...video,
               filePath: `uploads/${videoFileName}`,
@@ -235,7 +236,7 @@ router.patch('/:id', authMiddleware, adminMiddleware, uploadVideo.array('videos'
               ...section,
               videos: section.videos.map((video: any, videoIndex: number) => {
                 if (!sectionFiles[videoIndex]?.path) return { ...video, filePath: null };
-                const videoFileName = sectionFiles[videoIndex].path.split('uploads\\').pop()?.replace(/\\/g, '/');
+                const videoFileName = sectionFiles[videoIndex].path.split(path.sep).pop();
                 return {
                   ...video,
                   filePath: `uploads/${videoFileName}`

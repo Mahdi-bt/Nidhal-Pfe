@@ -335,11 +335,15 @@ export async function getEnrolledCourses(userId: string): Promise<(Course & {
 export const createCourse = async (formData: FormData): Promise<Course> => {
   const response = await fetch(`${BASE_URL}/courses`, {
     method: 'POST',
-    headers: getAuthHeader(),
+    headers: {
+      ...getAuthHeader(),
+      // Remove Content-Type header to let the browser set it with the boundary
+    },
     body: formData,
   });
   if (!response.ok) {
-    throw new Error('Failed to create course');
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to create course');
   }
   return response.json();
 };
@@ -347,11 +351,15 @@ export const createCourse = async (formData: FormData): Promise<Course> => {
 export const updateCourse = async (id: string, formData: FormData): Promise<Course> => {
   const response = await fetch(`${BASE_URL}/courses/${id}`, {
     method: 'PUT',
-    headers: getAuthHeader(),
+    headers: {
+      ...getAuthHeader(),
+      // Remove Content-Type header to let the browser set it with the boundary
+    },
     body: formData,
   });
   if (!response.ok) {
-    throw new Error('Failed to update course');
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to update course');
   }
   return response.json();
 };

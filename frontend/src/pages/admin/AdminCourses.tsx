@@ -84,8 +84,27 @@ const initialFormData: CourseFormData = {
 };
 
 const getFileUrl = (path: string) => {
-  if (!path) return '/placeholder-image.jpg';
-  return `http://localhost:3000/${path}`;
+  if (!path) return '/local-images/logo_Warzeez_Training.png';
+  // Remove /api if present in VITE_API_URL for static files
+  const base = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || '';
+  return `${base}/${path}`;
+};
+
+const getVideoMimeType = (file: File | string) => {
+  if (typeof file === 'string') {
+    const extension = file.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'mp4':
+        return 'video/mp4';
+      case 'webm':
+        return 'video/webm';
+      case 'ogg':
+        return 'video/ogg';
+      default:
+        return 'video/mp4';
+    }
+  }
+  return file.type || 'video/mp4';
 };
 
 const AdminCourses = () => {
@@ -643,7 +662,7 @@ const AdminCourses = () => {
                                       controls
                                       preload="metadata"
                                     >
-                                      <source src={getFileUrl(video.filePath)} type="video/mp4" />
+                                      <source src={getFileUrl(video.filePath)} type={getVideoMimeType(video.filePath)} />
                                       Your browser does not support the video tag.
                                     </video>
                                   </div>
@@ -663,7 +682,7 @@ const AdminCourses = () => {
                                       controls
                                       preload="metadata"
                                     >
-                                      <source src={URL.createObjectURL(video.file)} type="video/mp4" />
+                                      <source src={URL.createObjectURL(video.file)} type={getVideoMimeType(video.file)} />
                                       Your browser does not support the video tag.
                                     </video>
                                   </div>
@@ -736,15 +755,26 @@ const AdminCourses = () => {
             <div key={course.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="flex flex-col md:flex-row">
                 <div className="md:w-1/4">
-                  <img 
-                    src={getFileUrl(course.thumbnail)} 
-                    alt={course.name} 
-                    className="w-full h-48 md:h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder-image.jpg';
-                    }}
-                  />
+                  <>
+                    {course.thumbnail ? (
+                      <img 
+                        src={getFileUrl(course.thumbnail)} 
+                        alt={course.name} 
+                        className="w-full h-48 md:h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null; // Prevent infinite loop
+                          target.src = '/local-images/logo_Warzeez_Training.png';
+                        }}
+                      />
+                    ) : (
+                      <img
+                        src="/local-images/logo_Warzeez_Training.png"
+                        alt="Placeholder"
+                        className="w-full h-48 md:h-full object-cover"
+                      />
+                    )}
+                  </>
                 </div>
                 <div className="p-4 md:w-3/4 flex flex-col">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
